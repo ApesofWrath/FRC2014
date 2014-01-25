@@ -1,2 +1,3 @@
 #Gitignore File
-nbproject/project.bak
+nbproject/project.bak.xml
+/build/
