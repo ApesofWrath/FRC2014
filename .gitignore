@@ -1,3 +1,4 @@
 #Gitignore File
 nbproject/project.bak.xml
 /build/
+/nbproject/private/

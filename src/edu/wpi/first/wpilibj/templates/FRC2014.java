@@ -4,6 +4,7 @@ import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.SimpleRobot;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.DriverStationLCD;
+import edu.wpi.first.wpilibj.DriverStation;
 
 /*
  FRC2014 Code
@@ -31,6 +32,7 @@ public class FRC2014 extends SimpleRobot {
     //defining others
     RobotDrive driver;
     DriverStationLCD lcd;
+    DriverStation ds;
     Joystick joyLeft;
     Joystick joyRight;
     Joystick joyOperator;
@@ -44,11 +46,12 @@ public class FRC2014 extends SimpleRobot {
     public FRC2014() {
         driver = new RobotDrive(MOTOR_LEFT_PWM, MOTOR_RIGHT_PWM);
         lcd = DriverStationLCD.getInstance();
+        ds = DriverStation.getInstance();
 
         joyLeft = new Joystick(JOYSTICK_LEFT_USB);
         joyRight = new Joystick(JOYSTICK_RIGHT_USB);
         joyOperator = new Joystick(JOYSTICK_OPERATOR_USB);
-        
+
         isTankDrive = true;
     }
 
@@ -56,7 +59,7 @@ public class FRC2014 extends SimpleRobot {
      * This function is called once each time the robot enters autonomous mode.
      */
     public void autonomous() {
-        lcd.println(DriverStationLCD.Line.kUser1, 1, "autonomous v"+VERSION_NUMBER);
+        lcd.println(DriverStationLCD.Line.kUser1, 1, "autonomous v" + VERSION_NUMBER);
         lcd.updateLCD();
         while (isAutonomous() && isEnabled()) {
 
@@ -67,12 +70,12 @@ public class FRC2014 extends SimpleRobot {
      * This function is called once each time the robot enters operator control.
      */
     public void operatorControl() {
-        lcd.println(DriverStationLCD.Line.kUser1, 1, "teleoperated v"+VERSION_NUMBER);
+        lcd.println(DriverStationLCD.Line.kUser1, 1, "teleoperated v" + VERSION_NUMBER);
         lcd.updateLCD();
         boolean oldToggleDriveValue = false;
 
         while (isOperatorControl() && isEnabled()) {
-            
+
             boolean toggleDriveValue = joyLeft.getRawButton(JOYSTICK_TOGGLE_DRIVE);
             if (toggleDriveValue && (oldToggleDriveValue == false)) { //detects state change
                 isTankDrive = !isTankDrive;
@@ -95,10 +98,10 @@ public class FRC2014 extends SimpleRobot {
      * This function is called once each time the robot enters test mode.
      */
     public void test() {
-        lcd.println(DriverStationLCD.Line.kUser1, 1, "test v"+VERSION_NUMBER);
+        lcd.println(DriverStationLCD.Line.kUser1, 1, "test v" + VERSION_NUMBER);
         lcd.updateLCD();
         while (isTest() && isEnabled()) {
-
+            
         }
     }
 }
