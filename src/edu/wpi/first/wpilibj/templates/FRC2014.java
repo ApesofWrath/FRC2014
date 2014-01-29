@@ -15,29 +15,41 @@ public class FRC2014 extends SimpleRobot {
     // <editor-fold defaultstate="collapsed" desc="Variable DefinitionS">
 
     //defining pwm constants
-    final int MOTOR_LEFT_PWM = 1;
-    final int MOTOR_RIGHT_PWM = 8;
+    static final int MOTOR_LEFT_PWM = 1;
+    static final int MOTOR_RIGHT_PWM = 8;
 
     //defining digital io constants
-    final int PRESSURE_SENSOR_PORT = 4;
+    static final int PRESSURE_SENSOR_PORT = 4;
+    static final int KICKER_ENCODER_PORT_A = 6;
+    static final int KICKER_ENCODER_PORT_B = 7;
+    static final int KICKER_OPTICAL_SENSOR_PORT = 2;
 
     //defining joystick numbers
-    final int JOYSTICK_LEFT_USB = 1;
-    final int JOYSTICK_RIGHT_USB = 2;
-    final int JOYSTICK_OPERATOR_USB = 3;
+    static final int JOYSTICK_LEFT_USB = 1;
+    static final int JOYSTICK_RIGHT_USB = 2;
+    static final int JOYSTICK_OPERATOR_USB = 3;
 
     //defining joystick buttons
-    final int JOYSTICK_TOGGLE_DRIVE = 3;
+    static final int JOYSTICK_TOGGLE_DRIVE = 3;
+    static final int JOYSTICK_LOAD_BUTTON = 3;
+    static final int JOYSTICK_FIRE_BUTTON = 1;
 
+    //defining encoder positions
+    static final int KICKER_ENCODER_TOP_POSITION = 125;
+    static final int KICKER_ENCODER_KICK_POSITION = -31;
+    static final int KICKER_ENCODER_REST_POSITION = 0;
+    
+    
     //defining others
-    RobotDrive driver;
-    DriverStationLCD lcd;
-    DriverStation ds;
-    Joystick joyLeft;
-    Joystick joyRight;
-    Joystick joyOperator;
-    boolean isTankDrive; //true is tank drive, false is arcade drive
-    final String VERSION_NUMBER = "0.1";
+    private RobotDrive driver;
+    private DriverStationLCD lcd;
+    private DriverStation ds;
+    private Joystick joyLeft;
+    private Joystick joyRight;
+    private Joystick joyOperator;
+    private boolean isTankDrive; //true is tank drive, false is arcade drive
+    static final String VERSION_NUMBER = "0.1";
+    private KickerStateMachine kickerStates;
 
     // </editor-fold>
     /**
@@ -53,6 +65,8 @@ public class FRC2014 extends SimpleRobot {
         joyOperator = new Joystick(JOYSTICK_OPERATOR_USB);
 
         isTankDrive = true;
+        
+        kickerStates = new KickerStateMachine();
     }
 
     /**
@@ -101,7 +115,7 @@ public class FRC2014 extends SimpleRobot {
         lcd.println(DriverStationLCD.Line.kUser1, 1, "test v" + VERSION_NUMBER);
         lcd.updateLCD();
         while (isTest() && isEnabled()) {
-            
+            kickerStates.stateMachine();
         }
     }
 }
