@@ -44,9 +44,10 @@ public class FRC2014 extends SimpleRobot {
     static final int JOYSTICK_RESET_BUTTON = 2;
     static final int SOLENOID_OUT_BUTTON = 5;
     static final int SOLENOID_IN_BUTTON = 4;
+    static final int SET_SAMPLE_RATE_BUTTON = 6;
 
     //defining encoder positions
-    static final int KICKER_ENCODER_TOP_POSITION = 55; //loading is positive
+    static final int KICKER_ENCODER_TOP_POSITION = 50; //loading is positive
     static final int KICKER_ENCODER_KICK_POSITION = -16; //kick is negative
     static final int KICKER_ENCODER_REST_POSITION = 0;
 
