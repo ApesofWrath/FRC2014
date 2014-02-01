@@ -47,7 +47,7 @@ public class FRC2014 extends SimpleRobot {
     static final int SET_SAMPLE_RATE_BUTTON = 6;
 
     //defining encoder positions
-    static final int KICKER_ENCODER_TOP_POSITION = 50; //loading is positive
+    static final int KICKER_ENCODER_TOP_POSITION = 55; //loading is positive
     static final int KICKER_ENCODER_KICK_POSITION = -16; //kick is negative
     static final int KICKER_ENCODER_REST_POSITION = 0;
 
@@ -105,7 +105,7 @@ public class FRC2014 extends SimpleRobot {
      * This function is called once each time the robot enters operator control.
      */
     public void operatorControl() {
-        lcd.println(DriverStationLCD.Line.kUser1, 1, "teleoperated v" + VERSION_NUMBER);
+        lcd.println(DriverStationLCD.Lin                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  e.kUser1, 1, "teleoperated v" + VERSION_NUMBER);
         lcd.updateLCD();
         boolean oldToggleDriveValue = false;
         
@@ -140,6 +140,8 @@ public class FRC2014 extends SimpleRobot {
     public void test() {
         lcd.println(DriverStationLCD.Line.kUser1, 1, "test v" + VERSION_NUMBER);
         lcd.updateLCD();
+        kickerStates.setSetpoint(KICKER_ENCODER_REST_POSITION);
+        kickerStates.reset();
         kickerStates.setState(kickerStates.INIT); //makes sure robot is on init
         while (isTest() && isEnabled()) {
             kickerStates.stateMachine();

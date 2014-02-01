@@ -26,8 +26,8 @@ import edu.wpi.first.wpilibj.Talon;
  Port Assignments:
  */
 public class KickerStateMachine {
-
     // <editor-fold defaultstate="collapsed" desc="Variable Definitions">
+
     private double kP = .1, kI = .001, kD = 0, sampleRate = 0.85;
 
     public final int INIT = 0, MOTOR_ON = 1, MOTOR_MOVING_UP = 2, MOTOR_OFF = 3, WAIT = 4, KICK = 5, BACK_DRIVE = 6, ENCODER_RESET = 7, RESET = 8;
@@ -50,8 +50,39 @@ public class KickerStateMachine {
         kickerMotor = new Talon(FRC2014.MOTOR_KICK_PWM);
         ds = DriverStation.getInstance();
         lcd = DriverStationLCD.getInstance();
+        sampleRate = ds.getAnalogIn(4);
         pid = new PIDController(kP, kI, kD, kickerEncoder, kickerMotor, sampleRate);
+        pid.enable();
         kickerEncoder.setPIDSourceParameter(PIDSource.PIDSourceParameter.kDistance);
+        // Start in INIT
+        state = INIT;
+    }
+
+    public synchronized void reset() {
+        kP = ds.getAnalogIn(1);
+        kI = ds.getAnalogIn(2);
+        kD = ds.getAnalogIn(3);
+        pid.setPID(kP, kI, kD);
+
+        setSampleRate();
+        pid.reset();
+        pid.disable();
+        kickerMotor.set(0);
+        try {
+            for (int i = -0; i < 50; i++) {
+                if (kickerOpticalSensor.get() == false) {
+                    wait(1000);
+                    break;
+                }
+                wait(10);
+            }
+        } catch (InterruptedException ex) {
+            ex.printStackTrace();
+        }
+        kickerEncoder.reset();
+        //pid.enable();
+        
+        //state = INIT;
     }
 
     public int getState() {
@@ -70,10 +101,6 @@ public class KickerStateMachine {
     }
 
     public void setSetpoint(int setpoint) {
-        kP = ds.getAnalogIn(1);
-        kI = ds.getAnalogIn(2);
-        kD = ds.getAnalogIn(3);
-        pid.setPID(kP, kI, kD);
         pid.setSetpoint(setpoint);
         lcd.println(DriverStationLCD.Line.kUser6, 1, "Set=" + pid.getSetpoint() + "            ");
         lcd.updateLCD();
@@ -89,17 +116,21 @@ public class KickerStateMachine {
         lcd.updateLCD();
         lcd.println(DriverStationLCD.Line.kUser4, 1, "" + kickerOpticalSensor.get() + "   ");
         lcd.updateLCD();
+        lcd.println(DriverStationLCD.Line.kUser5, 1, ("" + kickerMotor.get() + "     ").substring(0, 5));
+        lcd.updateLCD();
+
         if (joyOperator.getRawButton(FRC2014.JOYSTICK_RESET_BUTTON)) {
             state = RESET;
         }
         switch (state) {
             case INIT:
+                pid.enable();
+                pid.setSetpoint(FRC2014.KICKER_ENCODER_REST_POSITION);
                 if (joyOperator.getRawButton(FRC2014.JOYSTICK_LOAD_BUTTON)) {
                     state = MOTOR_ON;
                 }
                 if (joyOperator.getRawButton(FRC2014.SET_SAMPLE_RATE_BUTTON)) {
                     setSampleRate();
-
                 }
                 break;
 
@@ -111,18 +142,17 @@ public class KickerStateMachine {
 
             case MOTOR_MOVING_UP:
                 //   motorSpeed = ((joyOperator.getZ() + 1) / 2);
-                pid.enable();
+                //pid.enable();
                 setSetpoint(FRC2014.KICKER_ENCODER_TOP_POSITION);
-                lcd.println(DriverStationLCD.Line.kUser5, 1, "" + kickerMotor.get() + "   ");
-                lcd.updateLCD();
                 if (kickerEncoder.get() >= FRC2014.KICKER_ENCODER_TOP_POSITION) {
                     state = MOTOR_OFF;
                 }
                 break;
 
             case MOTOR_OFF:
-                kickerMotor.set(0);
-                pid.disable();
+                //kickerMotor.set(0);
+                //pid.setSetpoint(FRC2014.KICKER_ENCODER_TOP_POSITION);
+                //pid.disable();
                 state = WAIT;
                 break;
 
@@ -134,11 +164,8 @@ public class KickerStateMachine {
 
             case KICK:
                 //  motorSpeed = -((joyOperator.getZ() + 1) / 2);
-                pid.enable();
+                //pid.enable();
                 setSetpoint(FRC2014.KICKER_ENCODER_KICK_POSITION);
-                lcd.println(DriverStationLCD.Line.kUser5, 1, "" + kickerMotor.get() + "   ");
-                lcd.updateLCD();
-
                 // kickerMotor.set(motorSpeed); //kicking is positive, flip value
                 if (kickerEncoder.get() <= FRC2014.KICKER_ENCODER_KICK_POSITION) {
                     state = BACK_DRIVE;
@@ -148,8 +175,6 @@ public class KickerStateMachine {
             case BACK_DRIVE:
                 // motorSpeed = ((joyOperator.getZ() + 1) / 2);
                 setSetpoint(FRC2014.KICKER_ENCODER_REST_POSITION);
-                lcd.println(DriverStationLCD.Line.kUser5, 1, "" + kickerMotor.get() + "   ");
-                lcd.updateLCD();
                 //kickerMotor.set(motorSpeed); //kicking is positive, flip value
                 if (kickerEncoder.get() >= FRC2014.KICKER_ENCODER_REST_POSITION) {
                     state = ENCODER_RESET;
@@ -158,17 +183,20 @@ public class KickerStateMachine {
 
             case ENCODER_RESET:
                 if (!kickerOpticalSensor.get()) {
-                    pid.disable();
-                    kickerMotor.set(0);
+                    //pid.disable();
+                    //kickerMotor.set(0);
                     kickerEncoder.reset();
                     state = INIT;
                 }
                 break;
 
             case RESET:
-                pid.disable();
-                kickerEncoder.reset();
-                state = INIT;
+                //pid.disable();
+                //pid.setSetpoint(FRC2014.KICKER_ENCODER_REST_POSITION);
+                reset();
+                if (!joyOperator.getRawButton(FRC2014.JOYSTICK_RESET_BUTTON)) {
+                    state = INIT;
+                }
                 break;
 
             default:
