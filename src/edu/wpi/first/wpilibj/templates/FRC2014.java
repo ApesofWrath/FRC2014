@@ -81,7 +81,7 @@ public class FRC2014 extends SimpleRobot {
         
         isTankDrive = true;
         
-        kickerStates = new KickerStateMachine();
+        //kickerStates = new KickerStateMachine();
         
         compress = new Compressor(PRESSURE_SENSOR_PORT, SPIKE_PRESSURE_RELAY);
         //comment compressor if you are not using it
@@ -161,11 +161,6 @@ public class FRC2014 extends SimpleRobot {
         while (isTest() && isEnabled()) {
             RobotVision.ResultReport results = RobotVision.cameraVision();
             lcd.println(DriverStationLCD.Line.kUser2, 1, "target is "+results.targetExists);
-            try {
-                wait(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
-            }
         }
         /*kickerStates.setSetpoint(KICKER_ENCODER_REST_POSITION);
         kickerStates.reset();

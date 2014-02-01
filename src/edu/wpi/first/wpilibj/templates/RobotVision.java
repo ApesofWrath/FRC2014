@@ -124,9 +124,17 @@ public class RobotVision {
              * "testImage.jpg"
              *
              */
-            ColorImage image;
+            ColorImage image = null;
             if (isCamera) {
-                image = camera.getImage();
+                for (boolean isImage = false;!isImage;)
+                {
+                    isImage = true;
+                    try {
+                        image = camera.getImage();
+                    } catch (Exception e) {
+                        isImage = false;
+                    }
+                }
             } else {
                 image = new RGBImage(imagePath);     	// get the sample image from the cRIO flash
                 System.out.println(imagePath);
@@ -228,8 +236,8 @@ public class RobotVision {
             thresholdImage.free();
             image.free();
 
-        } catch (AxisCameraException ex) {        // this is needed if the camera.getImage() is called
-            ex.printStackTrace();
+        //} catch (AxisCameraException ex) {        // this is needed if the camera.getImage() is called
+        //    ex.printStackTrace();
         } catch (NIVisionException ex) {
             ex.printStackTrace();
         }
