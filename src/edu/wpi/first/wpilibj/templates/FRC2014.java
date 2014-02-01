@@ -63,7 +63,7 @@ public class FRC2014 extends SimpleRobot {
     private Joystick joyRight;
     private Joystick joyOperator;
     private boolean isTankDrive; //true is tank drive, false is arcade drive
-    static final String VERSION_NUMBER = "0.1";
+    static final String VERSION_NUMBER = "0.2";
     private KickerStateMachine kickerStates;
 
     // </editor-fold>
@@ -96,8 +96,26 @@ public class FRC2014 extends SimpleRobot {
     public void autonomous() {
         lcd.println(DriverStationLCD.Line.kUser1, 1, "autonomous v" + VERSION_NUMBER);
         lcd.updateLCD();
-        while (isAutonomous() && isEnabled()) {
-            
+        RobotVision.ResultReport results;
+        for(int i=0; i<3; i++) {
+            results = RobotVision.cameraVision();
+            if(results.targetExists && results.isHot){
+                kickerStates.reset();
+                kickerStates.setState(kickerStates.KICK);
+                while(kickerStates.getState()!=kickerStates.INIT) {
+                    kickerStates.stateMachine();
+                }
+                break;
+            }
+            else {
+                //moveCamera();
+            }
+        }
+        //turnFortyFiveDegrees();
+        kickerStates.reset();
+        kickerStates.setState(kickerStates.KICK);
+        while(kickerStates.getState()!=kickerStates.INIT) {
+            kickerStates.stateMachine();
         }
     }
 
@@ -140,11 +158,20 @@ public class FRC2014 extends SimpleRobot {
     public void test() {
         lcd.println(DriverStationLCD.Line.kUser1, 1, "test v" + VERSION_NUMBER);
         lcd.updateLCD();
-        kickerStates.setSetpoint(KICKER_ENCODER_REST_POSITION);
+        while (isTest() && isEnabled()) {
+            RobotVision.ResultReport results = RobotVision.cameraVision();
+            lcd.println(DriverStationLCD.Line.kUser2, 1, "target is "+results.targetExists);
+            try {
+                wait(1000);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
+            }
+        }
+        /*kickerStates.setSetpoint(KICKER_ENCODER_REST_POSITION);
         kickerStates.reset();
         kickerStates.setState(kickerStates.INIT); //makes sure robot is on init
         while (isTest() && isEnabled()) {
             kickerStates.stateMachine();
-        }
+        }*/
     }
 }

@@ -29,13 +29,13 @@ import edu.wpi.first.wpilibj.image.NIVision.MeasurementType;
  * Look in the VisionImages directory inside the project that is created for the
  * sample images.
  */
+
+//we have chosen to use the Axis M1013 camera because it is the newest version of axis camera and has the largest field of view
 public class RobotVision {
 
     //Camera constants used for distance calculation
     static final int Y_IMAGE_RES = 480;		//X Image resolution in pixels, should be 120, 240 or 480
     static final double VIEW_ANGLE = 49;		//Axis M1013
-    //final double VIEW_ANGLE = 41.7;		//Axis 206 camera
-    //final double VIEW_ANGLE = 37.4;  //Axis M1011 camera
     static final double PI = 3.141592653;
 
     //Score limits used for target identification
@@ -69,33 +69,52 @@ public class RobotVision {
         int horizontalIndex;
         boolean Hot;
         double totalScore;
-        double leftScore;
+        double leftScore; 
         double rightScore;
         double tapeWidthScore;
         double verticalScore;
     };
+    
+    public static class ResultReport { //reports results of vision search
+        boolean targetExists;
+        boolean isHot;
+        double distance;
+        
+        public ResultReport(boolean isHot, double distance) { //creates a result report that reports a target
+            this.isHot = isHot;
+            this.distance = distance;
+            this.targetExists = true;
+        }
+        
+        public ResultReport() { //creates a result report that reports no target found
+           this.isHot = false;
+           this.distance = -1;
+           this.targetExists = false;
+        }
+    }
 
     //used  to be robotInit
     static {
-        //camera = AxisCamera.getInstance();  // get an instance of the camera
+        camera = AxisCamera.getInstance();  // get an instance of the camera
         cc = new CriteriaCollection();      // create the criteria for the particle filter
         cc.addCriteria(MeasurementType.IMAQ_MT_AREA, AREA_MINIMUM, 65535, false);
     }
     
-    public static void cameraVision () {
-        vision(true, "");
+    public static ResultReport cameraVision () {
+        return vision(true, "");
     }
     
     //for tests
-    public static void imageVision (String imagePath) {
-        vision(false, imagePath);
+    public static ResultReport imageVision (String imagePath) {
+        return vision(false, imagePath);
     }
     
-    private static void vision(boolean isCamera, String imagePath) {
+    private static ResultReport vision(boolean isCamera, String imagePath) {
         TargetReport target = new TargetReport();
         int verticalTargets[] = new int[MAX_PARTICLES];
         int horizontalTargets[] = new int[MAX_PARTICLES];
         int verticalTargetCount, horizontalTargetCount;
+        ResultReport returnValue = new ResultReport();
         try {
             /**
              * Do the image capture with the camera and apply the algorithm
@@ -107,7 +126,7 @@ public class RobotVision {
              */
             ColorImage image;
             if (isCamera) {
-                image = camera.getImage();     // comment if using stored images
+                image = camera.getImage();
             } else {
                 image = new RGBImage(imagePath);     	// get the sample image from the cRIO flash
                 System.out.println(imagePath);
@@ -192,11 +211,9 @@ public class RobotVision {
                     ParticleAnalysisReport distanceReport = filteredImage.getParticleAnalysisReport(target.verticalIndex);
                     double distance = computeDistance(filteredImage, distanceReport, target.verticalIndex);
                     if (target.Hot) {
-                        System.out.println("Hot target located");
-                        System.out.println("Distance: " + distance);
+                        returnValue = new ResultReport(true, distance);
                     } else {
-                        System.out.println("No hot target present");
-                        System.out.println("Distance: " + distance);
+                        returnValue = new ResultReport(false, distance);
                     }
                 }
 
@@ -216,6 +233,8 @@ public class RobotVision {
         } catch (NIVisionException ex) {
             ex.printStackTrace();
         }
+        
+        return returnValue;
     }
 
     /**

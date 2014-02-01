@@ -124,8 +124,8 @@ public class KickerStateMachine {
         }
         switch (state) {
             case INIT:
-                pid.enable();
-                pid.setSetpoint(FRC2014.KICKER_ENCODER_REST_POSITION);
+                //pid.enable();
+                //pid.setSetpoint(FRC2014.KICKER_ENCODER_REST_POSITION);
                 if (joyOperator.getRawButton(FRC2014.JOYSTICK_LOAD_BUTTON)) {
                     state = MOTOR_ON;
                 }
@@ -137,12 +137,12 @@ public class KickerStateMachine {
             case MOTOR_ON:
                 //kickerMotor.set();
                 //add motor encoder safety
+                pid.enable();
                 state = MOTOR_MOVING_UP;
                 break;
 
             case MOTOR_MOVING_UP:
                 //   motorSpeed = ((joyOperator.getZ() + 1) / 2);
-                //pid.enable();
                 setSetpoint(FRC2014.KICKER_ENCODER_TOP_POSITION);
                 if (kickerEncoder.get() >= FRC2014.KICKER_ENCODER_TOP_POSITION) {
                     state = MOTOR_OFF;
@@ -183,7 +183,7 @@ public class KickerStateMachine {
 
             case ENCODER_RESET:
                 if (!kickerOpticalSensor.get()) {
-                    //pid.disable();
+                    pid.disable();
                     //kickerMotor.set(0);
                     kickerEncoder.reset();
                     state = INIT;
