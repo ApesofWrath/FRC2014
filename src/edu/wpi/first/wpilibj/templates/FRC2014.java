@@ -105,7 +105,7 @@ public class FRC2014 extends SimpleRobot {
      * This function is called once each time the robot enters operator control.
      */
     public void operatorControl() {
-        lcd.println(DriverStationLCD.Lin                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                  e.kUser1, 1, "teleoperated v" + VERSION_NUMBER);
+        lcd.println(DriverStationLCD.Line.kUser1, 1, "teleoperated v" + VERSION_NUMBER);
         lcd.updateLCD();
         boolean oldToggleDriveValue = false;
         
