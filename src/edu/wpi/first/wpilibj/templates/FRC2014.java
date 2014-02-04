@@ -76,7 +76,7 @@ public class FRC2014 extends SimpleRobot {
      * This function is called as soon as the robot is enabled.
      */
     public FRC2014() {
-        driver = new RobotDrive(MOTOR_FRONT_LEFT_PWM, MOTOR_BACK_LEFT_PWM, MOTOR_FRONT_RIGHT_PWM, MOTOR_BACK_RIGHT_PWM);
+        driver = null;//new RobotDrive(MOTOR_FRONT_LEFT_PWM, MOTOR_BACK_LEFT_PWM, MOTOR_FRONT_RIGHT_PWM, MOTOR_BACK_RIGHT_PWM);
         lcd = DriverStationLCD.getInstance();
         ds = DriverStation.getInstance();
 
@@ -125,17 +125,15 @@ public class FRC2014 extends SimpleRobot {
          }*/
         while (isAutonomous() && isEnabled()) {
             RobotVision.ResultReport results = RobotVision.cameraVision();
-            lcd.println(DriverStationLCD.Line.kUser2, 1, "target is " + results.targetExists);
-            lcd.updateLCD();
-            lcd.println(DriverStationLCD.Line.kUser2, 1, "hot : " + results.isHot);
-            lcd.updateLCD();
-            lcd.println(DriverStationLCD.Line.kUser2, 1, "distance is " + results.distance);
-            lcd.updateLCD();
-            try {
-                wait(1000);
-            } catch (InterruptedException e) {
-                e.printStackTrace();
+            if (results == null) {
+                lcd.println(DriverStationLCD.Line.kUser2, 1, "failure                        ");
+                lcd.updateLCD();
+                continue;
             }
+            lcd.println(DriverStationLCD.Line.kUser2, 1, "target is " + results.targetExists);
+            lcd.println(DriverStationLCD.Line.kUser3, 1, "hot : " + results.isHot);
+            lcd.println(DriverStationLCD.Line.kUser4, 1, "distance is " + results.distance);
+            lcd.updateLCD();
         }
     }
 

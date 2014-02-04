@@ -5,6 +5,7 @@
  */
 package edu.wpi.first.wpilibj.templates;
 
+import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.camera.AxisCamera;
 import edu.wpi.first.wpilibj.camera.AxisCameraException;
 import edu.wpi.first.wpilibj.image.*;
@@ -29,7 +30,6 @@ import edu.wpi.first.wpilibj.image.NIVision.MeasurementType;
  * Look in the VisionImages directory inside the project that is created for the
  * sample images.
  */
-
 //we have chosen to use the Axis M1013 camera because it is the newest version of axis camera and has the largest field of view
 public class RobotVision {
 
@@ -39,8 +39,8 @@ public class RobotVision {
     static final double PI = 3.141592653;
 
     //Score limits used for target identification
-    static final int RECTANGULARITY_LIMIT = 40;
-    static final int ASPECT_RATIO_LIMIT = 35;
+    static final int RECTANGULARITY_LIMIT = 35;
+    static final int ASPECT_RATIO_LIMIT = 40;
 
     //Score limits used for hot target determination
     static final int TAPE_WIDTH_LIMIT = 42;
@@ -69,27 +69,28 @@ public class RobotVision {
         int horizontalIndex;
         boolean Hot;
         double totalScore;
-        double leftScore; 
+        double leftScore;
         double rightScore;
         double tapeWidthScore;
         double verticalScore;
     };
-    
+
     public static class ResultReport { //reports results of vision search
+
         boolean targetExists;
         boolean isHot;
         double distance;
-        
+
         public ResultReport(boolean isHot, double distance) { //creates a result report that reports a target
             this.isHot = isHot;
             this.distance = distance;
             this.targetExists = true;
         }
-        
+
         public ResultReport() { //creates a result report that reports no target found
-           this.isHot = false;
-           this.distance = -1;
-           this.targetExists = false;
+            this.isHot = false;
+            this.distance = -1;
+            this.targetExists = false;
         }
     }
 
@@ -99,16 +100,16 @@ public class RobotVision {
         cc = new CriteriaCollection();      // create the criteria for the particle filter
         cc.addCriteria(MeasurementType.IMAQ_MT_AREA, AREA_MINIMUM, 65535, false);
     }
-    
-    public static ResultReport cameraVision () {
+
+    public static ResultReport cameraVision() {
         return vision(true, "");
     }
-    
+
     //for tests
-    public static ResultReport imageVision (String imagePath) {
+    public static ResultReport imageVision(String imagePath) {
         return vision(false, imagePath);
     }
-    
+
     private static ResultReport vision(boolean isCamera, String imagePath) {
         TargetReport target = new TargetReport();
         int verticalTargets[] = new int[MAX_PARTICLES];
@@ -126,28 +127,28 @@ public class RobotVision {
              */
             ColorImage image = null;
             if (isCamera) {
-                for (boolean isImage = false;!isImage;)
-                {
-                    isImage = true;
-                    try {
-                        image = camera.getImage();
-                    } catch (Exception e) {
-                        isImage = false;
-                    }
+                if (camera.freshImage()) {
+                    image = camera.getImage();
+                } else {
+                    return null;
                 }
             } else {
-                image = new RGBImage(imagePath);     	// get the sample image from the cRIO flash
                 System.out.println(imagePath);
             }
-            BinaryImage thresholdImage = image.thresholdHSV(105, 137, 230, 255, 133, 183);   // keep only green objects
-            //thresholdImage.write("/threshold.bmp");
+            
+            System.out.println("image: "+image);
+            //original values 105, 137, 230, 255, 133, 183
+            BinaryImage thresholdImage = image.thresholdHSV(105, 137, 0, 100, 50, 200);   // keep only green objects
+            thresholdImage.write("/threshold.bmp");
             BinaryImage filteredImage = thresholdImage.particleFilter(cc);           // filter out small particles
-            //filteredImage.write("/filteredImage.bmp");
+            System.out.println("filteredImage: "+filteredImage);
+            filteredImage.write("/filteredImage.bmp");
 
             //iterate through each particle and score to see if it is a target
             Scores scores[] = new Scores[filteredImage.getNumberParticles()];
             horizontalTargetCount = verticalTargetCount = 0;
-
+            
+            System.out.println("particles: "+filteredImage.getNumberParticles());
             if (filteredImage.getNumberParticles() > 0) {
                 for (int i = 0; i < MAX_PARTICLES && i < filteredImage.getNumberParticles(); i++) {
                     ParticleAnalysisReport report = filteredImage.getParticleAnalysisReport(i);
@@ -175,6 +176,7 @@ public class RobotVision {
                 //Zero out scores and set verticalIndex to first target in case there are no horizontal targets
                 target.totalScore = target.leftScore = target.rightScore = target.tapeWidthScore = target.verticalScore = 0;
                 target.verticalIndex = verticalTargets[0];
+                System.out.println("vertical "+verticalTargetCount);
                 for (int i = 0; i < verticalTargetCount; i++) {
                     ParticleAnalysisReport verticalReport = filteredImage.getParticleAnalysisReport(verticalTargets[i]);
                     for (int j = 0; j < horizontalTargetCount; j++) {
@@ -236,12 +238,12 @@ public class RobotVision {
             thresholdImage.free();
             image.free();
 
-        //} catch (AxisCameraException ex) {        // this is needed if the camera.getImage() is called
-        //    ex.printStackTrace();
+        } catch (AxisCameraException ex) {        // this is needed if the camera.getImage() is called
+            ex.printStackTrace();
         } catch (NIVisionException ex) {
             ex.printStackTrace();
         }
-        
+
         return returnValue;
     }
 
@@ -316,12 +318,14 @@ public class RobotVision {
      */
     static boolean scoreCompare(Scores scores, boolean vertical) {
         boolean isTarget = true;
-
         isTarget &= scores.rectangularity > RECTANGULARITY_LIMIT;
+        System.out.println("rect "+scores.rectangularity+", "+RECTANGULARITY_LIMIT);
         if (vertical) {
             isTarget &= scores.aspectRatioVertical > ASPECT_RATIO_LIMIT;
+            System.out.println("asp "+scores.aspectRatioVertical+", "+ASPECT_RATIO_LIMIT);
         } else {
             isTarget &= scores.aspectRatioHorizontal > ASPECT_RATIO_LIMIT;
+            System.out.println("asp "+scores.aspectRatioHorizontal+", "+ASPECT_RATIO_LIMIT);
         }
 
         return isTarget;
