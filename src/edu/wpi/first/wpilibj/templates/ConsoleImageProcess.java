@@ -66,7 +66,7 @@ public class ConsoleImageProcess {
                 else
                 {
                     // print info lines here
-                    printBuffer[x][y] =
+                    //printBuffer[x][y] =
                 }
                 System.out.print("\n");
             }
