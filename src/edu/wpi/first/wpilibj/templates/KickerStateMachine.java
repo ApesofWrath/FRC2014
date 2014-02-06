@@ -29,6 +29,8 @@ public class KickerStateMachine {
     // <editor-fold defaultstate="collapsed" desc="Variable Definitions">
 
     private double kP = .1, kI = .001, kD = 0, sampleRate = 0.85;
+    
+    
 
     public final int INIT = 0, MOTOR_ON = 1, MOTOR_MOVING_UP = 2, MOTOR_OFF = 3, WAIT = 4, KICK = 5, BACK_DRIVE = 6, ENCODER_RESET = 7, RESET = 8;
     private int state = INIT;

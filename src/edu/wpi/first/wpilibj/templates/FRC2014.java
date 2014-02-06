@@ -7,6 +7,7 @@ import edu.wpi.first.wpilibj.SimpleRobot;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.DriverStationLCD;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Servo;
 
 /*
  FRC2014 Code
@@ -19,9 +20,11 @@ public class FRC2014 extends SimpleRobot {
     //defining pwm constants
     static final int MOTOR_FRONT_RIGHT_PWM = 5;
     static final int MOTOR_FRONT_LEFT_PWM = 2;
-    static final int MOTOR_BACK_RIGHT_PWM = 8;
+    static final int MOTOR_BACK_RIGHT_PWM = 7;
     static final int MOTOR_BACK_LEFT_PWM = 1;
     static final int MOTOR_KICK_PWM = 3;
+    static final int SERVO_CAMERA_LR_PWM = 10;
+    static final int SERVO_CAMERA_UD_PWM = 8;
 
     //defining digital io constants
     static final int PRESSURE_SENSOR_PORT = 4;
@@ -67,6 +70,7 @@ public class FRC2014 extends SimpleRobot {
     private Joystick joyLeft;
     private Joystick joyRight;
     private Joystick joyOperator;
+    private Servo cameraUpDownServo, cameraLeftRightServo;
     private boolean isTankDrive; //true is tank drive, false is arcade drive
     static final String VERSION_NUMBER = "0.2";
     private KickerStateMachine kickerStates;
@@ -76,7 +80,7 @@ public class FRC2014 extends SimpleRobot {
      * This function is called as soon as the robot is enabled.
      */
     public FRC2014() {
-        driver = null;//new RobotDrive(MOTOR_FRONT_LEFT_PWM, MOTOR_BACK_LEFT_PWM, MOTOR_FRONT_RIGHT_PWM, MOTOR_BACK_RIGHT_PWM);
+        driver = new RobotDrive(MOTOR_FRONT_LEFT_PWM, MOTOR_BACK_LEFT_PWM, MOTOR_FRONT_RIGHT_PWM, MOTOR_BACK_RIGHT_PWM);
         lcd = DriverStationLCD.getInstance();
         ds = DriverStation.getInstance();
 
@@ -89,11 +93,13 @@ public class FRC2014 extends SimpleRobot {
         //kickerStates = new KickerStateMachine();
         compress = new Compressor(PRESSURE_SENSOR_PORT, SPIKE_PRESSURE_RELAY);
         //comment compressor if you are not using it
-        compress.start();
+        //compress.start();
 
         leftDriveSolenoid = new DoubleSolenoid(SOLENOID_LEFT_SHIFT_HIGH_PORT, SOLENOID_LEFT_SHIFT_LOW_PORT);
         rightDriveSolenoid = new DoubleSolenoid(SOLENOID_RIGHT_SHIFT_HIGH_PORT, SOLENOID_RIGHT_SHIFT_LOW_PORT);
-
+        
+        cameraLeftRightServo = new Servo(SERVO_CAMERA_LR_PWM);
+        cameraUpDownServo = new Servo(SERVO_CAMERA_UD_PWM);
     }
 
     /**
@@ -169,6 +175,20 @@ public class FRC2014 extends SimpleRobot {
                 leftDriveSolenoid.set(DoubleSolenoid.Value.kReverse);
                 rightDriveSolenoid.set(DoubleSolenoid.Value.kReverse);
             }
+            lcd.println(DriverStationLCD.Line.kUser3, 1, "5 is "+joyOperator.getRawAxis(5));
+            lcd.println(DriverStationLCD.Line.kUser4, 1, "6 is "+joyOperator.getRawAxis(6));
+            lcd.updateLCD();
+            
+            if (joyOperator.getRawAxis(5)==1) {
+                cameraLeftRightServo.set(cameraLeftRightServo.get()+.01);
+            } else if (joyOperator.getRawAxis(5)==-1) {
+                cameraLeftRightServo.set(cameraLeftRightServo.get()-.01);
+            }
+            if (joyOperator.getRawAxis(6)==1) {
+                cameraUpDownServo.set(cameraUpDownServo.get()+.01);
+            } else if (joyOperator.getRawAxis(6)==-1) {
+                cameraUpDownServo.set(cameraUpDownServo.get()-.01);
+            }
         }
     }
 
@@ -178,15 +198,18 @@ public class FRC2014 extends SimpleRobot {
     public void test() {
         lcd.println(DriverStationLCD.Line.kUser1, 1, "test v" + VERSION_NUMBER);
         lcd.updateLCD();
-        while (isTest() && isEnabled()) {
+        /*while (isTest() && isEnabled()) {
             RobotVision.ResultReport results = RobotVision.cameraVision();
             lcd.println(DriverStationLCD.Line.kUser2, 1, "target is " + results.targetExists);
-        }
+        }*/
         /*kickerStates.setSetpoint(KICKER_ENCODER_REST_POSITION);
          kickerStates.reset();
          kickerStates.setState(kickerStates.INIT); //makes sure robot is on init
          while (isTest() && isEnabled()) {
          kickerStates.stateMachine();
          }*/
+        
+        cameraLeftRightServo.set(1);
+        cameraUpDownServo.set(1);
     }
 }
