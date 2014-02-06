@@ -137,8 +137,10 @@ public class RobotVision {
             }
             
             System.out.println("image: "+image);
+            image.write("/image.bmp");
             //original values 105, 137, 230, 255, 133, 183
-            BinaryImage thresholdImage = image.thresholdHSV(105, 137, 0, 100, 50, 200);   // keep only green objects
+            //seeming to work values are 143, 227, 0, 255, 231, 255
+            BinaryImage thresholdImage = image.thresholdHSV(143, 227, 0, 255, 231, 255);   // keep only green objects
             thresholdImage.write("/threshold.bmp");
             BinaryImage filteredImage = thresholdImage.particleFilter(cc);           // filter out small particles
             System.out.println("filteredImage: "+filteredImage);
