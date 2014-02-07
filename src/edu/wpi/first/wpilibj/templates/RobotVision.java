@@ -55,6 +55,7 @@ public class RobotVision {
 
     static AxisCamera camera;          // the axis camera object (connected to the switch)
     static CriteriaCollection cc;      // the criteria for doing the particle filter operation
+    static ConsoleImageProcess cip;
 
     public static class Scores {
 
@@ -99,6 +100,7 @@ public class RobotVision {
         camera = AxisCamera.getInstance();  // get an instance of the camera
         cc = new CriteriaCollection();      // create the criteria for the particle filter
         cc.addCriteria(MeasurementType.IMAQ_MT_AREA, AREA_MINIMUM, 65535, false);
+        //cip = new ConsoleImageProcess();
     }
 
     public static ResultReport cameraVision() {
@@ -136,24 +138,27 @@ public class RobotVision {
                 System.out.println(imagePath);
             }
             
-            System.out.println("image: "+image);
+            //System.out.println("image: "+image);
             image.write("/image.bmp");
             //original values 105, 137, 230, 255, 133, 183
             //seeming to work values are 143, 227, 0, 255, 231, 255
             BinaryImage thresholdImage = image.thresholdHSV(143, 227, 0, 255, 231, 255);   // keep only green objects
             thresholdImage.write("/threshold.bmp");
             BinaryImage filteredImage = thresholdImage.particleFilter(cc);           // filter out small particles
-            System.out.println("filteredImage: "+filteredImage);
+            //System.out.println("filteredImage: "+filteredImage);
             filteredImage.write("/filteredImage.bmp");
 
             //iterate through each particle and score to see if it is a target
             Scores scores[] = new Scores[filteredImage.getNumberParticles()];
             horizontalTargetCount = verticalTargetCount = 0;
             
-            System.out.println("particles: "+filteredImage.getNumberParticles());
+            //System.out.println("particles: "+filteredImage.getNumberParticles());
             if (filteredImage.getNumberParticles() > 0) {
+                ParticleAnalysisReport[] analysisReports = new ParticleAnalysisReport[filteredImage.getNumberParticles()];
                 for (int i = 0; i < MAX_PARTICLES && i < filteredImage.getNumberParticles(); i++) {
                     ParticleAnalysisReport report = filteredImage.getParticleAnalysisReport(i);
+                    analysisReports[i] = report;
+                    
                     scores[i] = new Scores();
 
                     //Score each particle on rectangularity and aspect ratio
@@ -163,22 +168,24 @@ public class RobotVision {
 
                     //Check if the particle is a horizontal target, if not, check if it's a vertical target
                     if (scoreCompare(scores[i], false)) {
-                        System.out.println("particle: " + i + "is a Horizontal Target centerX: " + report.center_mass_x + "centerY: " + report.center_mass_y);
+                        //System.out.println("particle: " + i + "is a Horizontal Target centerX: " + report.center_mass_x + "centerY: " + report.center_mass_y);
                         horizontalTargets[horizontalTargetCount++] = i; //Add particle to target array and increment count
                     } else if (scoreCompare(scores[i], true)) {
-                        System.out.println("particle: " + i + "is a Vertical Target centerX: " + report.center_mass_x + "centerY: " + report.center_mass_y);
+                        //System.out.println("particle: " + i + "is a Vertical Target centerX: " + report.center_mass_x + "centerY: " + report.center_mass_y);
                         verticalTargets[verticalTargetCount++] = i;  //Add particle to target array and increment count
                     } else {
-                        System.out.println("particle: " + i + "is not a Target centerX: " + report.center_mass_x + "centerY: " + report.center_mass_y);
+                        //System.out.println("particle: " + i + "is not a Target centerX: " + report.center_mass_x + "centerY: " + report.center_mass_y);
                     }
-                    System.out.println("rect: " + scores[i].rectangularity + "ARHoriz: " + scores[i].aspectRatioHorizontal);
-                    System.out.println("ARVert: " + scores[i].aspectRatioVertical);
+                    //System.out.println("rect: " + scores[i].rectangularity + "ARHoriz: " + scores[i].aspectRatioHorizontal);
+                    //System.out.println("ARVert: " + scores[i].aspectRatioVertical);
                 }
+                
+                //cip.drawTargets(analysisReports);
 
                 //Zero out scores and set verticalIndex to first target in case there are no horizontal targets
                 target.totalScore = target.leftScore = target.rightScore = target.tapeWidthScore = target.verticalScore = 0;
                 target.verticalIndex = verticalTargets[0];
-                System.out.println("vertical "+verticalTargetCount);
+                //System.out.println("vertical "+verticalTargetCount);
                 for (int i = 0; i < verticalTargetCount; i++) {
                     ParticleAnalysisReport verticalReport = filteredImage.getParticleAnalysisReport(verticalTargets[i]);
                     for (int j = 0; j < horizontalTargetCount; j++) {
@@ -321,13 +328,13 @@ public class RobotVision {
     static boolean scoreCompare(Scores scores, boolean vertical) {
         boolean isTarget = true;
         isTarget &= scores.rectangularity > RECTANGULARITY_LIMIT;
-        System.out.println("rect "+scores.rectangularity+", "+RECTANGULARITY_LIMIT);
+        //System.out.println("rect "+scores.rectangularity+", "+RECTANGULARITY_LIMIT);
         if (vertical) {
             isTarget &= scores.aspectRatioVertical > ASPECT_RATIO_LIMIT;
-            System.out.println("asp "+scores.aspectRatioVertical+", "+ASPECT_RATIO_LIMIT);
+            //System.out.println("asp "+scores.aspectRatioVertical+", "+ASPECT_RATIO_LIMIT);
         } else {
             isTarget &= scores.aspectRatioHorizontal > ASPECT_RATIO_LIMIT;
-            System.out.println("asp "+scores.aspectRatioHorizontal+", "+ASPECT_RATIO_LIMIT);
+            //System.out.println("asp "+scores.aspectRatioHorizontal+", "+ASPECT_RATIO_LIMIT);
         }
 
         return isTarget;

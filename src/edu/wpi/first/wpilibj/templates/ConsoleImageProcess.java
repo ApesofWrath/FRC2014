@@ -16,8 +16,8 @@ public class ConsoleImageProcess {
 
     public static final int IMAGE_WIDTH = RobotVision.camera.getResolution().width;
     public static final int IMAGE_HEIGHT = RobotVision.camera.getResolution().height;
-    public static final int BUFFER_HEIGHT = 30;
-    public static final int BUFFER_SCREEN_HEIGHT = BUFFER_HEIGHT - 2;
+    public static final int BUFFER_HEIGHT = 24;
+    public static final int BUFFER_SCREEN_HEIGHT = BUFFER_HEIGHT + 2;
     public static final int BUFFER_WIDTH = (int) (BUFFER_SCREEN_HEIGHT * IMAGE_HEIGHT / IMAGE_WIDTH);
     private char printBuffer[][] = new char[BUFFER_WIDTH][BUFFER_HEIGHT];
 
@@ -28,7 +28,7 @@ public class ConsoleImageProcess {
     public char[][] drawTargets(ParticleAnalysisReport reports[]) {
         double pixelsPerCharHoriz = IMAGE_WIDTH / BUFFER_WIDTH;
         double pixelsPerCharVert = IMAGE_HEIGHT / BUFFER_SCREEN_HEIGHT;
-        String infoLines[] = new String[BUFFER_SCREEN_HEIGHT - BUFFER_HEIGHT];
+        String infoLines[] = new String[2];
         if (reports.length == 0) {
             return null;
         }
