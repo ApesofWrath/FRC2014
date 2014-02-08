@@ -10,6 +10,9 @@ import edu.wpi.first.wpilibj.camera.AxisCamera;
 import edu.wpi.first.wpilibj.camera.AxisCameraException;
 import edu.wpi.first.wpilibj.image.*;
 import edu.wpi.first.wpilibj.image.NIVision.MeasurementType;
+import java.util.Calendar;
+import java.util.Date;
+import java.util.Timer;
 
 /**
  * Sample program to use NIVision to find rectangles in the scene that are
@@ -103,6 +106,47 @@ public class RobotVision {
         //cip = new ConsoleImageProcess();
     }
 
+    public static long initializeCamera() { //returns time elapsed
+        Calendar c = Calendar.getInstance();
+        Date d = c.getTime();
+        long timeMillis = d.getTime();
+        try {
+            ColorImage image;
+            while (true) {
+                if (camera.freshImage()) {
+                    image = camera.getImage();
+                    if (image != null) {
+                        Calendar newCal = Calendar.getInstance();
+                        Date newDate = newCal.getTime();
+                        return newDate.getTime() - timeMillis;
+                    }
+                }
+            }
+        } catch (AxisCameraException e) {
+            return (long) -1;
+        } catch (NIVisionException e) {
+            return (long) -1;
+        }
+    }
+
+    public static boolean takePicture() {
+        if (camera.freshImage()) {
+            try {
+                ColorImage image = camera.getImage();
+                Calendar cal = Calendar.getInstance();
+                Date d = cal.getTime();
+                image.write("/img"+d.getTime()+".bmp");
+                return true;
+            } catch (AxisCameraException e) {
+                return false;
+            } catch (NIVisionException e) {
+                return false;
+            }
+        } else {
+            return false;
+        }
+    }
+
     public static ResultReport cameraVision() {
         return vision(true, "");
     }
@@ -137,28 +181,28 @@ public class RobotVision {
             } else {
                 System.out.println(imagePath);
             }
-            
+
             //System.out.println("image: "+image);
-            image.write("/image.bmp");
+            //image.write("/image.bmp");
             //original values 105, 137, 230, 255, 133, 183
             //seeming to work values are 143, 227, 0, 255, 231, 255
             BinaryImage thresholdImage = image.thresholdHSV(143, 227, 0, 255, 231, 255);   // keep only green objects
-            thresholdImage.write("/threshold.bmp");
+            //thresholdImage.write("/threshold.bmp");
             BinaryImage filteredImage = thresholdImage.particleFilter(cc);           // filter out small particles
             //System.out.println("filteredImage: "+filteredImage);
-            filteredImage.write("/filteredImage.bmp");
+            //filteredImage.write("/filteredImage.bmp");
 
             //iterate through each particle and score to see if it is a target
             Scores scores[] = new Scores[filteredImage.getNumberParticles()];
             horizontalTargetCount = verticalTargetCount = 0;
-            
+
             //System.out.println("particles: "+filteredImage.getNumberParticles());
             if (filteredImage.getNumberParticles() > 0) {
-                ParticleAnalysisReport[] analysisReports = new ParticleAnalysisReport[filteredImage.getNumberParticles()];
+                //ParticleAnalysisReport[] analysisReports = new ParticleAnalysisReport[filteredImage.getNumberParticles()]; //for ConsoleImageProcess
                 for (int i = 0; i < MAX_PARTICLES && i < filteredImage.getNumberParticles(); i++) {
                     ParticleAnalysisReport report = filteredImage.getParticleAnalysisReport(i);
-                    analysisReports[i] = report;
-                    
+                    //analysisReports[i] = report; //for ConsoleImageProcess
+
                     scores[i] = new Scores();
 
                     //Score each particle on rectangularity and aspect ratio
@@ -167,21 +211,22 @@ public class RobotVision {
                     scores[i].aspectRatioHorizontal = scoreAspectRatio(filteredImage, report, i, false);
 
                     //Check if the particle is a horizontal target, if not, check if it's a vertical target
-                    if (scoreCompare(scores[i], false)) {
-                        //System.out.println("particle: " + i + "is a Horizontal Target centerX: " + report.center_mass_x + "centerY: " + report.center_mass_y);
+                    if (scoreCompare(scores[i], false)) { //we have found a horizontal target
+                        System.out.println("particle: " + i + "is a Horizontal Target centerX: " + report.center_mass_x + "centerY: " + report.center_mass_y);
                         horizontalTargets[horizontalTargetCount++] = i; //Add particle to target array and increment count
-                    } else if (scoreCompare(scores[i], true)) {
-                        //System.out.println("particle: " + i + "is a Vertical Target centerX: " + report.center_mass_x + "centerY: " + report.center_mass_y);
+                    } else if (scoreCompare(scores[i], true)) { //we have found a verticle target
+                        image.write("/image.bmp"); //write what it sees for debugging
+                        filteredImage.write("/filteredImage.bmp");
+                        System.out.println("particle: " + i + "is a Vertical Target centerX: " + report.center_mass_x + "centerY: " + report.center_mass_y);
                         verticalTargets[verticalTargetCount++] = i;  //Add particle to target array and increment count
                     } else {
-                        //System.out.println("particle: " + i + "is not a Target centerX: " + report.center_mass_x + "centerY: " + report.center_mass_y);
+                        System.out.println("particle: " + i + "is not a Target centerX: " + report.center_mass_x + "centerY: " + report.center_mass_y);
                     }
-                    //System.out.println("rect: " + scores[i].rectangularity + "ARHoriz: " + scores[i].aspectRatioHorizontal);
-                    //System.out.println("ARVert: " + scores[i].aspectRatioVertical);
+                    System.out.println("rect: " + scores[i].rectangularity + "ARHoriz: " + scores[i].aspectRatioHorizontal);
+                    System.out.println("ARVert: " + scores[i].aspectRatioVertical);
                 }
-                
-                //cip.drawTargets(analysisReports);
 
+                //cip.drawTargets(analysisReports); //uses ConsoleImageProcess to attempt to draw particles.
                 //Zero out scores and set verticalIndex to first target in case there are no horizontal targets
                 target.totalScore = target.leftScore = target.rightScore = target.tapeWidthScore = target.verticalScore = 0;
                 target.verticalIndex = verticalTargets[0];
