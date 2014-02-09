@@ -10,9 +10,9 @@ import edu.wpi.first.wpilibj.camera.AxisCamera;
 import edu.wpi.first.wpilibj.camera.AxisCameraException;
 import edu.wpi.first.wpilibj.image.*;
 import edu.wpi.first.wpilibj.image.NIVision.MeasurementType;
+import edu.wpi.first.wpilibj.Timer;
 import java.util.Calendar;
 import java.util.Date;
-import java.util.Timer;
 
 /**
  * Sample program to use NIVision to find rectangles in the scene that are
@@ -38,7 +38,9 @@ public class RobotVision {
 
     //Camera constants used for distance calculation
     static final int Y_IMAGE_RES = 480;		//X Image resolution in pixels, should be 120, 240 or 480
-    static final double VIEW_ANGLE = 49;		//Axis M1013
+    static final double AXIS_M1013 = 49;		//Axis M1013
+    static final double AXIS_M1011 = 37.4;              //Axis M1011
+    static final double VIEW_ANGLE = AXIS_M1011;
     static final double PI = 3.141592653;
 
     //Score limits used for target identification
@@ -106,35 +108,33 @@ public class RobotVision {
         //cip = new ConsoleImageProcess();
     }
 
-    public static long initializeCamera() { //returns time elapsed
-        Calendar c = Calendar.getInstance();
-        Date d = c.getTime();
-        long timeMillis = d.getTime();
+    public static double initializeCamera() { //returns time elapsed
+        Timer t = new Timer();
+        t.start();
         try {
             ColorImage image;
             while (true) {
                 if (camera.freshImage()) {
                     image = camera.getImage();
                     if (image != null) {
-                        Calendar newCal = Calendar.getInstance();
-                        Date newDate = newCal.getTime();
-                        return newDate.getTime() - timeMillis;
+                        t.stop();
+                        return t.get();
                     }
                 }
             }
         } catch (AxisCameraException e) {
-            return (long) -1;
+            return -1.0;
         } catch (NIVisionException e) {
-            return (long) -1;
+            return -1.0;
         }
     }
 
     public static boolean takePicture() {
         if (camera.freshImage()) {
             try {
-                ColorImage image = camera.getImage();
                 Calendar cal = Calendar.getInstance();
                 Date d = cal.getTime();
+                ColorImage image = camera.getImage();
                 image.write("/img"+d.getTime()+".bmp");
                 return true;
             } catch (AxisCameraException e) {

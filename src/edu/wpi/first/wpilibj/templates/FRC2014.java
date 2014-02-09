@@ -32,10 +32,12 @@ public class FRC2014 extends SimpleRobot {
     static final int KICKER_ENCODER_PORT_A = 6;
     static final int KICKER_ENCODER_PORT_B = 7;
     static final int KICKER_OPTICAL_SENSOR_PORT = 2;
-    static final int SOLENOID_LEFT_SHIFT_HIGH_PORT = 2;
-    static final int SOLENOID_LEFT_SHIFT_LOW_PORT = 1;
-    static final int SOLENOID_RIGHT_SHIFT_HIGH_PORT = 4;
-    static final int SOLENOID_RIGHT_SHIFT_LOW_PORT = 3;
+    
+    //defining solenoid constants
+    static final int SOLENOID_LEFT_SHIFT_HIGH_PORT = 2; //gear shifting
+    static final int SOLENOID_LEFT_SHIFT_LOW_PORT = 1; //gear shifting
+    static final int SOLENOID_RIGHT_SHIFT_HIGH_PORT = 4; //gear shifting
+    static final int SOLENOID_RIGHT_SHIFT_LOW_PORT = 3; //gear shifting
 
     //defining relay constants
     static final int SPIKE_PRESSURE_RELAY = 1;
@@ -46,14 +48,14 @@ public class FRC2014 extends SimpleRobot {
     static final int JOYSTICK_OPERATOR_USB = 3;
 
     //defining joystick buttons
-    static final int JOYSTICK_TOGGLE_DRIVE = 3;
-    static final int JOYSTICK_LOAD_BUTTON = 3;
-    static final int JOYSTICK_FIRE_BUTTON = 1;
-    static final int JOYSTICK_RESET_BUTTON = 2;
-    static final int JOYSTICK_HIGH_SHIFT_BUTTON = 4;
-    static final int JOYSTICK_LOW_SHIFT_BUTTON = 5;
-    static final int SET_SAMPLE_RATE_BUTTON = 6;
-    static final int JOYSTICK_TAKE_PICTURE_BUTTON = 2;
+    static final int JOYSTICK_TOGGLE_DRIVE = 3; //for left joystick
+    static final int JOYSTICK_LOAD_BUTTON = 3; //for operator joystick
+    static final int JOYSTICK_FIRE_BUTTON = 1; //for operator joystick
+    static final int JOYSTICK_RESET_BUTTON = 2; //for operator joystick
+    static final int JOYSTICK_HIGH_SHIFT_BUTTON = 4; //for left joystick
+    static final int JOYSTICK_LOW_SHIFT_BUTTON = 5; //for left joystick
+    static final int SET_SAMPLE_RATE_BUTTON = 6; //for operator joystick
+    static final int JOYSTICK_TAKE_PICTURE_BUTTON = 12; //for operator joystick
 
     //defining encoder positions
     static final int KICKER_ENCODER_TOP_POSITION = 55; //loading is positive
@@ -77,7 +79,7 @@ public class FRC2014 extends SimpleRobot {
     private Joystick joyOperator;
     private Servo cameraUpDownServo, cameraLeftRightServo;
     private boolean isTankDrive; //true is tank drive, false is arcade drive
-    static final String VERSION_NUMBER = "0.2.1";
+    static final String VERSION_NUMBER = "0.2.2";
     private KickerStateMachine kickerStates;
 
     // </editor-fold>
@@ -87,6 +89,11 @@ public class FRC2014 extends SimpleRobot {
      */
     public FRC2014() { //use this constructor for instantiating variables
         driver = new RobotDrive(MOTOR_FRONT_LEFT_PWM, MOTOR_BACK_LEFT_PWM, MOTOR_FRONT_RIGHT_PWM, MOTOR_BACK_RIGHT_PWM);
+        driver.setInvertedMotor(RobotDrive.MotorType.kFrontLeft, true);
+        driver.setInvertedMotor(RobotDrive.MotorType.kRearLeft, true);
+        driver.setInvertedMotor(RobotDrive.MotorType.kFrontRight, true);
+        driver.setInvertedMotor(RobotDrive.MotorType.kRearRight, true);
+        
         lcd = DriverStationLCD.getInstance();
         ds = DriverStation.getInstance();
 
@@ -108,12 +115,12 @@ public class FRC2014 extends SimpleRobot {
     
    
     public void robotInit() { //use this method for setup of any kind
-        SmartDashboard.putBoolean("Camera Initialized", false);
+        /*SmartDashboard.putBoolean("Camera Initialized", false);
         System.out.println("Attempting to initialize Camera.");
-        long time = RobotVision.initializeCamera();
-        System.out.println("Initialization completed in "+time+" milliseconds");
-        SmartDashboard.putBoolean("Camera Initialized", (time!=(long)-1));
-        
+        double time = RobotVision.initializeCamera();
+        System.out.println("Initialization completed in "+time+" seconds");
+        SmartDashboard.putBoolean("Camera Initialized", (time!=-1.0));
+        */
         //comment compressor if you are not using it
         //compress.start();
         
@@ -126,29 +133,30 @@ public class FRC2014 extends SimpleRobot {
     public void autonomous() {
         lcd.println(DriverStationLCD.Line.kUser1, 1, "autonomous v" + VERSION_NUMBER);
         lcd.updateLCD();
-        cameraLeftRightServo.set(.5);
-        cameraUpDownServo.set(.5);
-        /*RobotVision.ResultReport results;
-         for(int i=0; i<3; i++) {
-         results = RobotVision.cameraVision();
-         if(results.targetExists && results.isHot){
-         kickerStates.reset();
-         kickerStates.setState(kickerStates.KICK);
-         while(kickerStates.getState()!=kickerStates.INIT) {
-         kickerStates.stateMachine();
-         }
-         break;
-         }
-         else {
-         //moveCamera();
-         }
-         }
-         //turnFortyFiveDegrees();
-         kickerStates.reset();
-         kickerStates.setState(kickerStates.KICK);
-         while(kickerStates.getState()!=kickerStates.INIT) {
-         kickerStates.stateMachine();
-         }*/
+        cameraLeftRightServo.set(SmartDashboard.getNumber("Left Right Camera", .5));
+        cameraUpDownServo.set(SmartDashboard.getNumber("Up Down Camera", .5));
+//        RobotVision.ResultReport results;
+//         for(int i=0; i<3; i++) {
+//         results = RobotVision.cameraVision();
+//         if(results.targetExists && results.isHot){
+//         kickerStates.reset();
+//         kickerStates.setState(kickerStates.KICK);
+//         while(kickerStates.getState()!=kickerStates.INIT) {
+//         kickerStates.stateMachine();
+//         }
+//         break;
+//         }
+//         else {
+//         cameraLeftRightServo.set(.5+(DIRECTION*.1));
+//         cameraUpDownServo.set(.5+(DIRECTION*.1))
+//         }
+//         }
+//         //turnFortyFiveDegrees();
+//         kickerStates.reset();
+//         kickerStates.setState(kickerStates.KICK);
+//         while(kickerStates.getState()!=kickerStates.INIT) {
+//         kickerStates.stateMachine();
+//         }
         while (isAutonomous() && isEnabled()) {
             RobotVision.ResultReport results = RobotVision.cameraVision();
             if (results == null) {
@@ -195,19 +203,22 @@ public class FRC2014 extends SimpleRobot {
             //</editor-fold>
 
             //<editor-fold defaultstate="collapsed" desc="Solenoid Shifter">
-            
+            /*
             if (joyLeft.getRawButton(JOYSTICK_HIGH_SHIFT_BUTTON)) {
                 leftDriveSolenoid.set(DoubleSolenoid.Value.kForward);
                 rightDriveSolenoid.set(DoubleSolenoid.Value.kForward);
-            } else if (joyRight.getRawButton(JOYSTICK_LOW_SHIFT_BUTTON)) {
+                SmartDashboard.putBoolean("Gear Solenoid", true);
+            } else if (joyLeft.getRawButton(JOYSTICK_LOW_SHIFT_BUTTON)) {
                 leftDriveSolenoid.set(DoubleSolenoid.Value.kReverse);
                 rightDriveSolenoid.set(DoubleSolenoid.Value.kReverse);
+                SmartDashboard.putBoolean("Gear Solenoid", false);
             }
             
+            */
             //</editor-fold>
-
-            // <editor-fold defaultstate="collapsed" desc="Camera Mover">
             
+            // <editor-fold defaultstate="collapsed" desc="Camera Mover">
+            /*
             double axis5 = joyOperator.getRawAxis(5);
             double axis6 = joyOperator.getRawAxis(6);
             
@@ -252,7 +263,7 @@ public class FRC2014 extends SimpleRobot {
             } else {
                 oldPictureValue = false;
             }
-            
+            */
             //</editor-fold>
         }
     }
@@ -264,17 +275,11 @@ public class FRC2014 extends SimpleRobot {
         lcd.println(DriverStationLCD.Line.kUser1, 1, "test v" + VERSION_NUMBER);
         lcd.updateLCD();
         while (isTest() && isEnabled()) {
-            RobotVision.ResultReport results = RobotVision.cameraVision();
-            lcd.println(DriverStationLCD.Line.kUser2, 1, "target is " + results.targetExists);
-        }
-        /*kickerStates.setSetpoint(KICKER_ENCODER_REST_POSITION);
-         kickerStates.reset();
-         kickerStates.setState(kickerStates.INIT); //makes sure robot is on init
-         while (isTest() && isEnabled()) {
-         kickerStates.stateMachine();
-         }*/
-
-        //cameraLeftRightServo.set(1);
-        //cameraUpDownServo.set(1);
+//            kickerStates.setSetpoint(KICKER_ENCODER_REST_POSITION);
+//            kickerStates.reset();
+//            kickerStates.setState(kickerStates.INIT); //makes sure robot is on init
+//            while (isTest() && isEnabled()) {
+//            kickerStates.stateMachine();
+         }
     }
 }
