@@ -24,6 +24,7 @@ public class FRC2014 extends SimpleRobot {
     static final int MOTOR_BACK_RIGHT_PWM = 7;
     static final int MOTOR_BACK_LEFT_PWM = 1;
     static final int MOTOR_KICK_PWM = 3;
+    static final int MOTOR_LIFT_PWM = 4;
     static final int SERVO_CAMERA_LR_PWM = 8;
     static final int SERVO_CAMERA_UD_PWM = 9;
 
@@ -32,6 +33,9 @@ public class FRC2014 extends SimpleRobot {
     static final int KICKER_ENCODER_PORT_A = 6;
     static final int KICKER_ENCODER_PORT_B = 7;
     static final int KICKER_OPTICAL_SENSOR_PORT = 2;
+    static final int LIFTER_ENCODER_PORT_A = 8;
+    static final int LIFTER_ENCODER_PORT_B = 9;
+    static final int LIFTER_LIMIT_SWITCH_BOTTOM = 1;
 
     //defining solenoid constants. these go directly on the cRIO
     static final int SOLENOID_LEFT_SHIFT_HIGH_PORT = 2; //gear shifting
@@ -59,14 +63,22 @@ public class FRC2014 extends SimpleRobot {
     static final int JOYSTICK_RESET_BUTTON = 2; //for operator joystick
     static final int SET_SAMPLE_RATE_BUTTON = 6; //for operator joystick
     static final int JOYSTICK_TAKE_PICTURE_BUTTON = 12; //for operator joystick
+    static final int JOYSTICK_LIFTER_UP_BUTTON = 4; //for operator joystick
+    static final int JOYSTICK_LIFTER_DOWN_BUTTON = 5; //for operator joystick
 
     //defining encoder positions
     static final int KICKER_ENCODER_TOP_POSITION = 55; //loading is positive
     static final int KICKER_ENCODER_KICK_POSITION = -16; //kick is negative
     static final int KICKER_ENCODER_REST_POSITION = 0;
+    static final int LIFTER_ENCODER_TOP_VALUE = 50;
 
     //defining speeds
     static final double CAMERA_SERVO_SPEED = 0.002;
+    
+    //defining directions
+    static final int LIFTER_GOING_UP = 1;
+    static final int LIFTER_GOING_DOWN = 2;
+    static final int LIFTER_NOT_MOVING = 3;
 
     //defining pneumatic objects
     private Compressor compress;
@@ -81,6 +93,7 @@ public class FRC2014 extends SimpleRobot {
     private Joystick joyRight;
     private Joystick joyOperator;
     private Servo cameraUpDownServo, cameraLeftRightServo;
+    private int lifterDirection;
     static final String VERSION_NUMBER = "0.2.3";
     private KickerStateMachine kickerStates;
     private int driveMode;
@@ -278,6 +291,26 @@ public class FRC2014 extends SimpleRobot {
              oldPictureValue = false;
              }
              */
+            //</editor-fold>
+            //<editor-fold desc="Lifter" defaultstate="collapsed">
+            if (joyOperator.getRawButton(JOYSTICK_LIFTER_UP_BUTTON)) {
+                lifterDirection = LIFTER_GOING_UP;
+            } else if (joyOperator.getRawButton(JOYSTICK_LIFTER_DOWN_BUTTON)) {
+                lcd.println(DriverStationLCD.Line.kUser3, 1, "down"+"                        ");
+                lifterDirection = LIFTER_GOING_DOWN;
+            }
+
+            if (lifterDirection == LIFTER_GOING_UP) {
+                lcd.println(DriverStationLCD.Line.kUser3, 1, "up"+"                        ");
+                if (BallLifter.moveUp()) { //if moving up is finished, stop
+                    lifterDirection = LIFTER_NOT_MOVING;
+                }
+            } else if (lifterDirection == LIFTER_GOING_DOWN) {
+                if (BallLifter.moveDown()) { //if moving down is finished, stop
+                lcd.println(DriverStationLCD.Line.kUser3, 1, "none"+"                        ");
+                    lifterDirection = LIFTER_NOT_MOVING;
+                }
+            }
             //</editor-fold>
         }
     }
