@@ -48,12 +48,15 @@ public class FRC2014 extends SimpleRobot {
     static final int JOYSTICK_OPERATOR_USB = 3;
 
     //defining joystick buttons
-    static final int JOYSTICK_TOGGLE_DRIVE = 3; //for left joystick
+    static final int JOYSTICK_TANKMODE_BUTTON = 6; //for left joystick
+    static final int JOYSTICK_ARCADEMODE_BUTTON = 7;
+    static final int JOYSTICK_SPLITARCADEMODE_BUTTON = 8;
+    static final int JOYSTICK_HIGH_SHIFT_BUTTON = 4; //for left joystick
+    static final int JOYSTICK_LOW_SHIFT_BUTTON = 5; //for left joystick
+
     static final int JOYSTICK_LOAD_BUTTON = 3; //for operator joystick
     static final int JOYSTICK_FIRE_BUTTON = 1; //for operator joystick
     static final int JOYSTICK_RESET_BUTTON = 2; //for operator joystick
-    static final int JOYSTICK_HIGH_SHIFT_BUTTON = 4; //for left joystick
-    static final int JOYSTICK_LOW_SHIFT_BUTTON = 5; //for left joystick
     static final int SET_SAMPLE_RATE_BUTTON = 6; //for operator joystick
     static final int JOYSTICK_TAKE_PICTURE_BUTTON = 12; //for operator joystick
 
@@ -78,9 +81,9 @@ public class FRC2014 extends SimpleRobot {
     private Joystick joyRight;
     private Joystick joyOperator;
     private Servo cameraUpDownServo, cameraLeftRightServo;
-    private boolean isTankDrive; //true is tank drive, false is arcade drive
-    static final String VERSION_NUMBER = "0.2.2";
+    static final String VERSION_NUMBER = "0.2.3";
     private KickerStateMachine kickerStates;
+    private int driveMode;
 
     // </editor-fold>
     /**
@@ -88,10 +91,10 @@ public class FRC2014 extends SimpleRobot {
      */
     public FRC2014() { //use this constructor for instantiating variables
         driver = new RobotDrive(MOTOR_FRONT_LEFT_PWM, MOTOR_BACK_LEFT_PWM, MOTOR_FRONT_RIGHT_PWM, MOTOR_BACK_RIGHT_PWM);
-        driver.setInvertedMotor(RobotDrive.MotorType.kFrontLeft, true);
-        driver.setInvertedMotor(RobotDrive.MotorType.kRearLeft, true);
-        driver.setInvertedMotor(RobotDrive.MotorType.kFrontRight, true);
-        driver.setInvertedMotor(RobotDrive.MotorType.kRearRight, true);
+//        driver.setInvertedMotor(RobotDrive.MotorType.kFrontLeft, true);
+//        driver.setInvertedMotor(RobotDrive.MotorType.kRearLeft, true);
+//        driver.setInvertedMotor(RobotDrive.MotorType.kFrontRight, true);
+//        driver.setInvertedMotor(RobotDrive.MotorType.kRearRight, true);
 
         lcd = DriverStationLCD.getInstance();
         ds = DriverStation.getInstance();
@@ -100,7 +103,7 @@ public class FRC2014 extends SimpleRobot {
         joyRight = new Joystick(JOYSTICK_RIGHT_USB);
         joyOperator = new Joystick(JOYSTICK_OPERATOR_USB);
 
-        isTankDrive = true;
+        driveMode = 1;
 
         //kickerStates = new KickerStateMachine();
         compress = new Compressor(PRESSURE_SENSOR_PORT, SPIKE_PRESSURE_RELAY);
@@ -115,13 +118,14 @@ public class FRC2014 extends SimpleRobot {
     public void robotInit() { //use this method for setup of any kind
         SmartDashboard.putBoolean("Camera Initialized", false);
         System.out.println("Attempting to initialize Camera.");
-        double time = RobotVision.initializeCamera();
-        System.out.println("Initialization completed in "+time+" seconds");
-        SmartDashboard.putBoolean("Camera Initialized", (time<0));
-        
+        driver.setInvertedMotor(RobotDrive.MotorType.kFrontRight, false);
+        driver.setInvertedMotor(RobotDrive.MotorType.kRearRight, false);
+//        double time = RobotVision.initializeCamera();
+//        System.out.println("Initialization completed in "+time+" seconds");
+//        SmartDashboard.putBoolean("Camera Initialized", (time<0));
+
         //comment compressor if you are not using it
         //compress.start();
-
         SmartDashboard.putString("Version Number", VERSION_NUMBER);
     }
 
@@ -166,7 +170,7 @@ public class FRC2014 extends SimpleRobot {
             lcd.println(DriverStationLCD.Line.kUser3, 1, "hot : " + results.isHot);
             lcd.println(DriverStationLCD.Line.kUser4, 1, "distance is " + results.distance);
             lcd.updateLCD();
-            
+
             SmartDashboard.putBoolean("Target", results.targetExists);
             SmartDashboard.putBoolean("Hot", results.isHot);
             SmartDashboard.putNumber("Distance", results.distance);
@@ -179,31 +183,40 @@ public class FRC2014 extends SimpleRobot {
     public void operatorControl() {
         lcd.println(DriverStationLCD.Line.kUser1, 1, "teleoperated v" + VERSION_NUMBER);
         lcd.updateLCD();
-        boolean oldToggleDriveValue = false, oldPictureValue = false;
+        boolean oldPictureValue = false;
         double upDownServoValue = 0.5, leftRightServoValue = 0.5;
-
+        
         while (isOperatorControl() && isEnabled()) {
+            lcd.println(DriverStationLCD.Line.kUser2, 1, " " + driveMode);
+            if (joyLeft.getRawButton(JOYSTICK_ARCADEMODE_BUTTON) || joyRight.getRawButton(JOYSTICK_ARCADEMODE_BUTTON)) {
+                driveMode = 0;
+            }
+            if (joyLeft.getRawButton(JOYSTICK_TANKMODE_BUTTON) || joyRight.getRawButton(JOYSTICK_TANKMODE_BUTTON)) {
+                driveMode = 1;
+            }
+            if (joyLeft.getRawButton(JOYSTICK_SPLITARCADEMODE_BUTTON) || joyRight.getRawButton(JOYSTICK_SPLITARCADEMODE_BUTTON)) {
+                driveMode = -1;
+            }
 
             // <editor-fold defaultstate="collapsed" desc="Drive Toggler">
-            boolean toggleDriveValue = joyLeft.getRawButton(JOYSTICK_TOGGLE_DRIVE);
-            if (toggleDriveValue && (oldToggleDriveValue == false)) { //detects state change
-                isTankDrive = !isTankDrive;
-            }
-            if (isTankDrive) {
+            if (driveMode > 0) {
                 driver.tankDrive(joyLeft, joyRight);
                 lcd.println(DriverStationLCD.Line.kUser2, 1, "Tank Drive    ");
                 lcd.updateLCD();
-                SmartDashboard.putString("Drive Mode", "Tank Drive");
-            } else {
+                SmartDashboard.putString("Drive Mode:", "Tank Drive");
+            } else if (driveMode == 0) {
                 driver.arcadeDrive(joyLeft);
                 lcd.println(DriverStationLCD.Line.kUser2, 1, "Arcade Drive");
                 lcd.updateLCD();
-                SmartDashboard.putString("Drive Mode", "Arcade Drive");
+                SmartDashboard.putString("Drive Mode:", "Arcade Drive");
+            } else { //if not + or 0 then negative
+                driver.drive(joyLeft.getY(), joyRight.getX());
+                lcd.println(DriverStationLCD.Line.kUser2, 1, "Split Drive");
+                lcd.updateLCD();
+                SmartDashboard.putString("Drive Mode:", "Split Drive");
             }
-            oldToggleDriveValue = toggleDriveValue;
 
             //</editor-fold>
-            
             //<editor-fold defaultstate="collapsed" desc="Solenoid Shifter">
             /*
              if (joyLeft.getRawButton(JOYSTICK_HIGH_SHIFT_BUTTON)) {
@@ -218,7 +231,6 @@ public class FRC2014 extends SimpleRobot {
             
              */
             //</editor-fold>
-            
             // <editor-fold defaultstate="collapsed" desc="Camera Mover">
             /*
              double axis5 = joyOperator.getRawAxis(5);
@@ -276,7 +288,9 @@ public class FRC2014 extends SimpleRobot {
     public void test() {
         lcd.println(DriverStationLCD.Line.kUser1, 1, "test v" + VERSION_NUMBER);
         lcd.updateLCD();
+        RobotMotorTester tester = new RobotMotorTester();
         while (isTest() && isEnabled()) {
+            tester.motorTest();
 //            kickerStates.setSetpoint(KICKER_ENCODER_REST_POSITION);
 //            kickerStates.reset();
 //            kickerStates.setState(kickerStates.INIT); //makes sure robot is on init
