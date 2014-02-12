@@ -19,12 +19,12 @@ public class FRC2014 extends SimpleRobot {
     // <editor-fold defaultstate="collapsed" desc="Variable Definitions">
 
     //defining pwm constants. these go on the digital sidecar
-    static final int MOTOR_FRONT_RIGHT_PWM = 5;
+    static final int MOTOR_FRONT_RIGHT_PWM = 6;
     static final int MOTOR_FRONT_LEFT_PWM = 2;
-    static final int MOTOR_BACK_RIGHT_PWM = 7;
+    static final int MOTOR_BACK_RIGHT_PWM = 5;
     static final int MOTOR_BACK_LEFT_PWM = 1;
     static final int MOTOR_KICK_PWM = 3;
-    static final int MOTOR_LIFT_PWM = 4;
+    static final int MOTOR_LIFT_PWM = 7;
     static final int SERVO_CAMERA_LR_PWM = 8;
     static final int SERVO_CAMERA_UD_PWM = 9;
 
@@ -296,7 +296,6 @@ public class FRC2014 extends SimpleRobot {
             if (joyOperator.getRawButton(JOYSTICK_LIFTER_UP_BUTTON)) {
                 lifterDirection = LIFTER_GOING_UP;
             } else if (joyOperator.getRawButton(JOYSTICK_LIFTER_DOWN_BUTTON)) {
-                lcd.println(DriverStationLCD.Line.kUser3, 1, "down"+"                        ");
                 lifterDirection = LIFTER_GOING_DOWN;
             }
 
@@ -304,10 +303,12 @@ public class FRC2014 extends SimpleRobot {
                 lcd.println(DriverStationLCD.Line.kUser3, 1, "up"+"                        ");
                 if (BallLifter.moveUp()) { //if moving up is finished, stop
                     lifterDirection = LIFTER_NOT_MOVING;
+                    lcd.println(DriverStationLCD.Line.kUser3, 1, "none"+"                        ");
                 }
             } else if (lifterDirection == LIFTER_GOING_DOWN) {
+                lcd.println(DriverStationLCD.Line.kUser3, 1, "down"+"                        ");
                 if (BallLifter.moveDown()) { //if moving down is finished, stop
-                lcd.println(DriverStationLCD.Line.kUser3, 1, "none"+"                        ");
+                    lcd.println(DriverStationLCD.Line.kUser3, 1, "none"+"                        ");
                     lifterDirection = LIFTER_NOT_MOVING;
                 }
             }

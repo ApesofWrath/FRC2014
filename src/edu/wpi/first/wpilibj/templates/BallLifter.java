@@ -6,6 +6,7 @@
 package edu.wpi.first.wpilibj.templates;
 
 import edu.wpi.first.wpilibj.DigitalInput;
+import edu.wpi.first.wpilibj.DriverStationLCD;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Talon;
@@ -23,8 +24,11 @@ public class BallLifter {
     static private Encoder lifterEncoder;
     static private Joystick joyOperator;
     static private boolean isCalibrated;
+    
+    static private DriverStationLCD lcd;
 
     static { //analogous to constructor
+        lcd = DriverStationLCD.getInstance();
         joyOperator = new Joystick(FRC2014.JOYSTICK_OPERATOR_USB);
         isCalibrated = false;
         lifterMotor = new Talon(FRC2014.MOTOR_LIFT_PWM);
@@ -34,7 +38,7 @@ public class BallLifter {
     }
 
     public static boolean calibrate() {
-        if (limitSwitchBottom.get() == true) {
+        if (limitSwitchBottom.get() == false) {
             lifterEncoder.reset();
             if (lifterEncoder.getStopped()) { //start the encoder if it hasn't been started yet
                 lifterEncoder.start();
@@ -43,6 +47,8 @@ public class BallLifter {
         } else {
             isCalibrated = false;
         }
+        lcd.println(DriverStationLCD.Line.kUser4, 1, "cal: "+isCalibrated+"                            ");
+        lcd.updateLCD();
         return isCalibrated;
     }
 
@@ -50,14 +56,23 @@ public class BallLifter {
         if (isCalibrated) {
 //            if (lifterEncoder.get() >= FRC2014.LIFTER_ENCODER_TOP_VALUE) {
             if (joyOperator.getRawButton(10)) {
+                lcd.println(DriverStationLCD.Line.kUser5, 1, "finished moving                             ");
+                lcd.updateLCD();
+                lifterMotor.set(0);
                 return true;
             }
             lifterMotor.set(MOTOR_SPEED);
+            lcd.println(DriverStationLCD.Line.kUser5, 1, "moving                                       ");
+            lcd.updateLCD();
             return false;
         } else {
             if (calibrate()) {
+                lcd.println(DriverStationLCD.Line.kUser5, 1, "calibrating                                         ");
+                lcd.updateLCD();
                 return false;
             } else {
+                lcd.println(DriverStationLCD.Line.kUser5, 1, "failure                                         ");
+                lcd.updateLCD();
                 System.out.println("Failure");
                 return false;
             }
@@ -65,7 +80,7 @@ public class BallLifter {
     }
 
     public static boolean moveDown() {
-        if (limitSwitchBottom.get() == true) {
+        if (limitSwitchBottom.get() == false) {
             lifterMotor.set(0);
             calibrate();
             return true;
