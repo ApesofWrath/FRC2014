@@ -12,13 +12,13 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /*
  FRC2014 Code
- Document your changes in your git commit messages
+ Document your changes in your git commit messages 
  View commit messages by right clicking in project folder and selecting git log.
  */
 public class FRC2014 extends SimpleRobot {
     // <editor-fold defaultstate="collapsed" desc="Variable Definitions">
 
-    //defining pwm constants
+    //defining pwm constants. these go on the digital sidecar
     static final int MOTOR_FRONT_RIGHT_PWM = 5;
     static final int MOTOR_FRONT_LEFT_PWM = 2;
     static final int MOTOR_BACK_RIGHT_PWM = 7;
@@ -27,19 +27,19 @@ public class FRC2014 extends SimpleRobot {
     static final int SERVO_CAMERA_LR_PWM = 8;
     static final int SERVO_CAMERA_UD_PWM = 9;
 
-    //defining digital io constants
+    //defining digital io constants. these go on the digital sidecar
     static final int PRESSURE_SENSOR_PORT = 4;
     static final int KICKER_ENCODER_PORT_A = 6;
     static final int KICKER_ENCODER_PORT_B = 7;
     static final int KICKER_OPTICAL_SENSOR_PORT = 2;
-    
-    //defining solenoid constants
+
+    //defining solenoid constants. these go directly on the cRIO
     static final int SOLENOID_LEFT_SHIFT_HIGH_PORT = 2; //gear shifting
     static final int SOLENOID_LEFT_SHIFT_LOW_PORT = 1; //gear shifting
     static final int SOLENOID_RIGHT_SHIFT_HIGH_PORT = 4; //gear shifting
     static final int SOLENOID_RIGHT_SHIFT_LOW_PORT = 3; //gear shifting
 
-    //defining relay constants
+    //defining relay constants. these go on the digital sidecar
     static final int SPIKE_PRESSURE_RELAY = 1;
 
     //defining joystick numbers
@@ -61,7 +61,7 @@ public class FRC2014 extends SimpleRobot {
     static final int KICKER_ENCODER_TOP_POSITION = 55; //loading is positive
     static final int KICKER_ENCODER_KICK_POSITION = -16; //kick is negative
     static final int KICKER_ENCODER_REST_POSITION = 0;
-    
+
     //defining speeds
     static final double CAMERA_SERVO_SPEED = 0.002;
 
@@ -83,7 +83,6 @@ public class FRC2014 extends SimpleRobot {
     private KickerStateMachine kickerStates;
 
     // </editor-fold>
-    
     /**
      * This function is called as soon as the robot is enabled.
      */
@@ -93,7 +92,7 @@ public class FRC2014 extends SimpleRobot {
         driver.setInvertedMotor(RobotDrive.MotorType.kRearLeft, true);
         driver.setInvertedMotor(RobotDrive.MotorType.kFrontRight, true);
         driver.setInvertedMotor(RobotDrive.MotorType.kRearRight, true);
-        
+
         lcd = DriverStationLCD.getInstance();
         ds = DriverStation.getInstance();
 
@@ -112,18 +111,17 @@ public class FRC2014 extends SimpleRobot {
         cameraLeftRightServo = new Servo(SERVO_CAMERA_LR_PWM);
         cameraUpDownServo = new Servo(SERVO_CAMERA_UD_PWM);
     }
-    
-   
+
     public void robotInit() { //use this method for setup of any kind
-        /*SmartDashboard.putBoolean("Camera Initialized", false);
+        SmartDashboard.putBoolean("Camera Initialized", false);
         System.out.println("Attempting to initialize Camera.");
         double time = RobotVision.initializeCamera();
         System.out.println("Initialization completed in "+time+" seconds");
-        SmartDashboard.putBoolean("Camera Initialized", (time!=-1.0));
-        */
+        SmartDashboard.putBoolean("Camera Initialized", (time<0));
+        
         //comment compressor if you are not using it
         //compress.start();
-        
+
         SmartDashboard.putString("Version Number", VERSION_NUMBER);
     }
 
@@ -168,6 +166,10 @@ public class FRC2014 extends SimpleRobot {
             lcd.println(DriverStationLCD.Line.kUser3, 1, "hot : " + results.isHot);
             lcd.println(DriverStationLCD.Line.kUser4, 1, "distance is " + results.distance);
             lcd.updateLCD();
+            
+            SmartDashboard.putBoolean("Target", results.targetExists);
+            SmartDashboard.putBoolean("Hot", results.isHot);
+            SmartDashboard.putNumber("Distance", results.distance);
         }
     }
 
@@ -199,71 +201,71 @@ public class FRC2014 extends SimpleRobot {
                 SmartDashboard.putString("Drive Mode", "Arcade Drive");
             }
             oldToggleDriveValue = toggleDriveValue;
-            
-            //</editor-fold>
 
+            //</editor-fold>
+            
             //<editor-fold defaultstate="collapsed" desc="Solenoid Shifter">
             /*
-            if (joyLeft.getRawButton(JOYSTICK_HIGH_SHIFT_BUTTON)) {
-                leftDriveSolenoid.set(DoubleSolenoid.Value.kForward);
-                rightDriveSolenoid.set(DoubleSolenoid.Value.kForward);
-                SmartDashboard.putBoolean("Gear Solenoid", true);
-            } else if (joyLeft.getRawButton(JOYSTICK_LOW_SHIFT_BUTTON)) {
-                leftDriveSolenoid.set(DoubleSolenoid.Value.kReverse);
-                rightDriveSolenoid.set(DoubleSolenoid.Value.kReverse);
-                SmartDashboard.putBoolean("Gear Solenoid", false);
-            }
+             if (joyLeft.getRawButton(JOYSTICK_HIGH_SHIFT_BUTTON)) {
+             leftDriveSolenoid.set(DoubleSolenoid.Value.kForward);
+             rightDriveSolenoid.set(DoubleSolenoid.Value.kForward);
+             SmartDashboard.putBoolean("Gear Solenoid", true);
+             } else if (joyLeft.getRawButton(JOYSTICK_LOW_SHIFT_BUTTON)) {
+             leftDriveSolenoid.set(DoubleSolenoid.Value.kReverse);
+             rightDriveSolenoid.set(DoubleSolenoid.Value.kReverse);
+             SmartDashboard.putBoolean("Gear Solenoid", false);
+             }
             
-            */
+             */
             //</editor-fold>
             
             // <editor-fold defaultstate="collapsed" desc="Camera Mover">
             /*
-            double axis5 = joyOperator.getRawAxis(5);
-            double axis6 = joyOperator.getRawAxis(6);
+             double axis5 = joyOperator.getRawAxis(5);
+             double axis6 = joyOperator.getRawAxis(6);
             
-            lcd.println(DriverStationLCD.Line.kUser3, 1, "5 is "+axis5);
-            lcd.println(DriverStationLCD.Line.kUser4, 1, "6 is "+axis6);
-            lcd.updateLCD();
+             lcd.println(DriverStationLCD.Line.kUser3, 1, "5 is "+axis5);
+             lcd.println(DriverStationLCD.Line.kUser4, 1, "6 is "+axis6);
+             lcd.updateLCD();
             
-            SmartDashboard.putNumber("Axis 5", axis5);
-            SmartDashboard.putNumber("Axis 6", axis6);
+             SmartDashboard.putNumber("Axis 5", axis5);
+             SmartDashboard.putNumber("Axis 6", axis6);
             
-            if (axis5 == 1.0) {
-                leftRightServoValue+=CAMERA_SERVO_SPEED;
-            } else if (axis5 == -1.0) {
-                leftRightServoValue-=CAMERA_SERVO_SPEED;
-            }
-            if (axis6 == 1.0) {
-                upDownServoValue+=CAMERA_SERVO_SPEED;
-            } else if (axis6 == -1.0) {
-                upDownServoValue-=CAMERA_SERVO_SPEED;
-            }
+             if (axis5 == 1.0) {
+             leftRightServoValue+=CAMERA_SERVO_SPEED;
+             } else if (axis5 == -1.0) {
+             leftRightServoValue-=CAMERA_SERVO_SPEED;
+             }
+             if (axis6 == 1.0) {
+             upDownServoValue+=CAMERA_SERVO_SPEED;
+             } else if (axis6 == -1.0) {
+             upDownServoValue-=CAMERA_SERVO_SPEED;
+             }
             
-            if (leftRightServoValue>1) {
-                leftRightServoValue = 1;
-            } else if (leftRightServoValue<0) {
-                leftRightServoValue = 0;
-            }
-            if (upDownServoValue>1) {
-                upDownServoValue = 1;
-            } else if (upDownServoValue<0) {
-                upDownServoValue = 0;
-            }
+             if (leftRightServoValue>1) {
+             leftRightServoValue = 1;
+             } else if (leftRightServoValue<0) {
+             leftRightServoValue = 0;
+             }
+             if (upDownServoValue>1) {
+             upDownServoValue = 1;
+             } else if (upDownServoValue<0) {
+             upDownServoValue = 0;
+             }
             
-            cameraLeftRightServo.set(leftRightServoValue);
-            cameraUpDownServo.set(upDownServoValue);
+             cameraLeftRightServo.set(leftRightServoValue);
+             cameraUpDownServo.set(upDownServoValue);
             
-            if (joyOperator.getRawButton(JOYSTICK_TAKE_PICTURE_BUTTON) && (!oldPictureValue)) {
-                if (RobotVision.takePicture()) {
-                    oldPictureValue = true;
-                } else {
-                    oldPictureValue = false;
-                }
-            } else {
-                oldPictureValue = false;
-            }
-            */
+             if (joyOperator.getRawButton(JOYSTICK_TAKE_PICTURE_BUTTON) && (!oldPictureValue)) {
+             if (RobotVision.takePicture()) {
+             oldPictureValue = true;
+             } else {
+             oldPictureValue = false;
+             }
+             } else {
+             oldPictureValue = false;
+             }
+             */
             //</editor-fold>
         }
     }
@@ -280,6 +282,6 @@ public class FRC2014 extends SimpleRobot {
 //            kickerStates.setState(kickerStates.INIT); //makes sure robot is on init
 //            while (isTest() && isEnabled()) {
 //            kickerStates.stateMachine();
-         }
+        }
     }
 }

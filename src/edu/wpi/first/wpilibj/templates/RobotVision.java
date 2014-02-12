@@ -5,7 +5,6 @@
  */
 package edu.wpi.first.wpilibj.templates;
 
-import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.camera.AxisCamera;
 import edu.wpi.first.wpilibj.camera.AxisCameraException;
 import edu.wpi.first.wpilibj.image.*;
@@ -135,7 +134,7 @@ public class RobotVision {
                 Calendar cal = Calendar.getInstance();
                 Date d = cal.getTime();
                 ColorImage image = camera.getImage();
-                image.write("/img"+d.getTime()+".bmp");
+                image.write("/img" + d.getTime() + ".bmp");
                 return true;
             } catch (AxisCameraException e) {
                 return false;
