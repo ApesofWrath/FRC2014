@@ -49,7 +49,7 @@ public class KickerStateMachine {
         kickerEncoder = new Encoder(FRC2014.KICKER_ENCODER_PORT_A, FRC2014.KICKER_ENCODER_PORT_B);
         kickerOpticalSensor = new DigitalInput(FRC2014.KICKER_OPTICAL_SENSOR_PORT);
         kickerEncoder.start();
-        kickerMotor = new Talon(FRC2014.MOTOR_KICK_PWM);
+        kickerMotor = new Talon(FRC2014.MOTOR_KICKER_LEFT_PWM);
         ds = DriverStation.getInstance();
         lcd = DriverStationLCD.getInstance();
         sampleRate = ds.getAnalogIn(4);

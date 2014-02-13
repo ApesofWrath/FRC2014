@@ -31,7 +31,7 @@ public class BallLifter {
         lcd = DriverStationLCD.getInstance();
         joyOperator = new Joystick(FRC2014.JOYSTICK_OPERATOR_USB);
         isCalibrated = false;
-        lifterMotor = new Talon(FRC2014.MOTOR_LIFT_PWM);
+        lifterMotor = new Talon(FRC2014.MOTOR_LOADER_PWM);
         limitSwitchBottom = new DigitalInput(FRC2014.LIFTER_LIMIT_SWITCH_BOTTOM);
         lifterEncoder = new Encoder(FRC2014.LIFTER_ENCODER_PORT_A, FRC2014.LIFTER_ENCODER_PORT_B);
         calibrate();

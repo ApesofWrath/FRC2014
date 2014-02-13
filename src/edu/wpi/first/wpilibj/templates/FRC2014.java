@@ -8,6 +8,7 @@ import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.DriverStationLCD;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Servo;
+import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /*
@@ -20,13 +21,15 @@ public class FRC2014 extends SimpleRobot {
 
     //defining pwm constants. these go on the digital sidecar
     static final int MOTOR_FRONT_RIGHT_PWM = 6;
-    static final int MOTOR_FRONT_LEFT_PWM = 2;
+    static final int MOTOR_FRONT_LEFT_PWM = 3;
     static final int MOTOR_BACK_RIGHT_PWM = 5;
-    static final int MOTOR_BACK_LEFT_PWM = 1;
-    static final int MOTOR_KICK_PWM = 3;
-    static final int MOTOR_LIFT_PWM = 7;
-    static final int SERVO_CAMERA_LR_PWM = 8;
-    static final int SERVO_CAMERA_UD_PWM = 9;
+    static final int MOTOR_BACK_LEFT_PWM = 2;
+    static final int MOTOR_KICKER_RIGHT_PWM = 4;
+    static final int MOTOR_KICKER_LEFT_PWM = 1;
+    static final int MOTOR_LOADER_PWM = 7;
+    static final int MOTOR_BACKUP_PWM = 8;
+    static final int SERVO_CAMERA_LR_PWM = 9;
+    static final int SERVO_CAMERA_UD_PWM = 10;
 
     //defining digital io constants. these go on the digital sidecar
     static final int PRESSURE_SENSOR_PORT = 4;
@@ -93,21 +96,20 @@ public class FRC2014 extends SimpleRobot {
     private Joystick joyRight;
     private Joystick joyOperator;
     private Servo cameraUpDownServo, cameraLeftRightServo;
-    private int lifterDirection;
-    static final String VERSION_NUMBER = "0.2.3";
+    static final String VERSION_NUMBER = "0.2.4";
     private KickerStateMachine kickerStates;
     private int driveMode;
+    private int lifterDirection = LIFTER_NOT_MOVING;
+    
+
+    private Talon talonFrontLeft, talonFrontRight, talonBackLeft, talonBackRight,
+            talonKickerLeft, talonKickerRight, talonLoader, talonBackup;
 
     // </editor-fold>
     /**
      * This function is called as soon as the robot is enabled.
      */
     public FRC2014() { //use this constructor for instantiating variables
-        driver = new RobotDrive(MOTOR_FRONT_LEFT_PWM, MOTOR_BACK_LEFT_PWM, MOTOR_FRONT_RIGHT_PWM, MOTOR_BACK_RIGHT_PWM);
-//        driver.setInvertedMotor(RobotDrive.MotorType.kFrontLeft, true);
-//        driver.setInvertedMotor(RobotDrive.MotorType.kRearLeft, true);
-//        driver.setInvertedMotor(RobotDrive.MotorType.kFrontRight, true);
-//        driver.setInvertedMotor(RobotDrive.MotorType.kRearRight, true);
 
         lcd = DriverStationLCD.getInstance();
         ds = DriverStation.getInstance();
@@ -116,16 +118,29 @@ public class FRC2014 extends SimpleRobot {
         joyRight = new Joystick(JOYSTICK_RIGHT_USB);
         joyOperator = new Joystick(JOYSTICK_OPERATOR_USB);
 
-        driveMode = 1;
+        driveMode = 1; // default to tank
 
         //kickerStates = new KickerStateMachine();
         compress = new Compressor(PRESSURE_SENSOR_PORT, SPIKE_PRESSURE_RELAY);
 
-        leftDriveSolenoid = new DoubleSolenoid(SOLENOID_LEFT_SHIFT_HIGH_PORT, SOLENOID_LEFT_SHIFT_LOW_PORT);
-        rightDriveSolenoid = new DoubleSolenoid(SOLENOID_RIGHT_SHIFT_HIGH_PORT, SOLENOID_RIGHT_SHIFT_LOW_PORT);
+        leftDriveSolenoid = new DoubleSolenoid(SOLENOID_LEFT_SHIFT_HIGH_PORT,
+                SOLENOID_LEFT_SHIFT_LOW_PORT);
+
+        rightDriveSolenoid = new DoubleSolenoid(SOLENOID_RIGHT_SHIFT_HIGH_PORT,
+                SOLENOID_RIGHT_SHIFT_LOW_PORT);
 
         cameraLeftRightServo = new Servo(SERVO_CAMERA_LR_PWM);
         cameraUpDownServo = new Servo(SERVO_CAMERA_UD_PWM);
+        talonFrontLeft = new Talon(MOTOR_FRONT_LEFT_PWM);
+        talonFrontRight = new Talon(MOTOR_FRONT_RIGHT_PWM);
+        talonBackLeft = new Talon(MOTOR_BACK_LEFT_PWM);
+        talonBackRight = new Talon(MOTOR_BACK_RIGHT_PWM);
+        talonKickerLeft = new Talon(MOTOR_KICKER_LEFT_PWM);
+        talonKickerRight = new Talon(MOTOR_KICKER_RIGHT_PWM);
+        talonLoader = new Talon(MOTOR_LOADER_PWM);
+        talonBackup = new Talon(MOTOR_BACKUP_PWM);
+
+        driver = new RobotDrive(talonFrontLeft, talonBackLeft, talonFrontRight, talonBackRight);
     }
 
     public void robotInit() { //use this method for setup of any kind
@@ -201,13 +216,17 @@ public class FRC2014 extends SimpleRobot {
 
         while (isOperatorControl() && isEnabled()) {
             lcd.println(DriverStationLCD.Line.kUser2, 1, " " + driveMode);
-            if (joyLeft.getRawButton(JOYSTICK_ARCADEMODE_BUTTON) || joyRight.getRawButton(JOYSTICK_ARCADEMODE_BUTTON)) {
+
+            if (joyLeft.getRawButton(JOYSTICK_ARCADEMODE_BUTTON)
+                    || joyRight.getRawButton(JOYSTICK_ARCADEMODE_BUTTON)) {
                 driveMode = 0;
             }
-            if (joyLeft.getRawButton(JOYSTICK_TANKMODE_BUTTON) || joyRight.getRawButton(JOYSTICK_TANKMODE_BUTTON)) {
+            if (joyLeft.getRawButton(JOYSTICK_TANKMODE_BUTTON)
+                    || joyRight.getRawButton(JOYSTICK_TANKMODE_BUTTON)) {
                 driveMode = 1;
             }
-            if (joyLeft.getRawButton(JOYSTICK_SPLITARCADEMODE_BUTTON) || joyRight.getRawButton(JOYSTICK_SPLITARCADEMODE_BUTTON)) {
+            if (joyLeft.getRawButton(JOYSTICK_SPLITARCADEMODE_BUTTON)
+                    || joyRight.getRawButton(JOYSTICK_SPLITARCADEMODE_BUTTON)) {
                 driveMode = -1;
             }
 
@@ -320,9 +339,12 @@ public class FRC2014 extends SimpleRobot {
     public void test() {
         lcd.println(DriverStationLCD.Line.kUser1, 1, "test v" + VERSION_NUMBER);
         lcd.updateLCD();
-        RobotMotorTester tester = new RobotMotorTester();
+        Talon[] motors = {talonFrontLeft, talonFrontRight, talonBackLeft, talonBackRight,
+            talonKickerLeft, talonKickerRight, talonLoader, talonBackup};
+        Servo[] servos = {cameraLeftRightServo, cameraUpDownServo};
         while (isTest() && isEnabled()) {
-            tester.motorTest();
+            RobotMotorTester.motorTest(motors, 1, joyOperator, lcd);
+            RobotMotorTester.servoTest(servos, 9, joyOperator, lcd);
 //            kickerStates.setSetpoint(KICKER_ENCODER_REST_POSITION);
 //            kickerStates.reset();
 //            kickerStates.setState(kickerStates.INIT); //makes sure robot is on init
