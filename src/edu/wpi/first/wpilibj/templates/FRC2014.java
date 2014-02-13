@@ -62,7 +62,7 @@ public class FRC2014 extends SimpleRobot {
     static final int JOYSTICK_FIRE_BUTTON = 1; //for operator joystick
     static final int JOYSTICK_RESET_BUTTON = 2; //for operator joystick
     static final int SET_SAMPLE_RATE_BUTTON = 6; //for operator joystick
-    static final int JOYSTICK_TAKE_PICTURE_BUTTON = 12; //for operator joystick
+    static final int JOYSTICK_TAKE_PICTURE_BUTTON = 11; //for operator joystick
     static final int JOYSTICK_LIFTER_UP_BUTTON = 4; //for operator joystick
     static final int JOYSTICK_LIFTER_DOWN_BUTTON = 5; //for operator joystick
 
@@ -74,7 +74,7 @@ public class FRC2014 extends SimpleRobot {
 
     //defining speeds
     static final double CAMERA_SERVO_SPEED = 0.002;
-    
+
     //defining directions
     static final int LIFTER_GOING_UP = 1;
     static final int LIFTER_GOING_DOWN = 2;
@@ -133,9 +133,9 @@ public class FRC2014 extends SimpleRobot {
         System.out.println("Attempting to initialize Camera.");
         driver.setInvertedMotor(RobotDrive.MotorType.kFrontRight, false);
         driver.setInvertedMotor(RobotDrive.MotorType.kRearRight, false);
-//        double time = RobotVision.initializeCamera();
-//        System.out.println("Initialization completed in "+time+" seconds");
-//        SmartDashboard.putBoolean("Camera Initialized", (time<0));
+        double time = RobotVision.initializeCamera();
+        System.out.println("Initialization completed in " + time + " seconds");
+        SmartDashboard.putBoolean("Camera Initialized", (time < 0));
 
         //comment compressor if you are not using it
         //compress.start();
@@ -198,7 +198,7 @@ public class FRC2014 extends SimpleRobot {
         lcd.updateLCD();
         boolean oldPictureValue = false;
         double upDownServoValue = 0.5, leftRightServoValue = 0.5;
-        
+
         while (isOperatorControl() && isEnabled()) {
             lcd.println(DriverStationLCD.Line.kUser2, 1, " " + driveMode);
             if (joyLeft.getRawButton(JOYSTICK_ARCADEMODE_BUTTON) || joyRight.getRawButton(JOYSTICK_ARCADEMODE_BUTTON)) {
@@ -245,52 +245,50 @@ public class FRC2014 extends SimpleRobot {
              */
             //</editor-fold>
             // <editor-fold defaultstate="collapsed" desc="Camera Mover">
-            /*
-             double axis5 = joyOperator.getRawAxis(5);
-             double axis6 = joyOperator.getRawAxis(6);
-            
-             lcd.println(DriverStationLCD.Line.kUser3, 1, "5 is "+axis5);
-             lcd.println(DriverStationLCD.Line.kUser4, 1, "6 is "+axis6);
-             lcd.updateLCD();
-            
-             SmartDashboard.putNumber("Axis 5", axis5);
-             SmartDashboard.putNumber("Axis 6", axis6);
-            
-             if (axis5 == 1.0) {
-             leftRightServoValue+=CAMERA_SERVO_SPEED;
-             } else if (axis5 == -1.0) {
-             leftRightServoValue-=CAMERA_SERVO_SPEED;
-             }
-             if (axis6 == 1.0) {
-             upDownServoValue+=CAMERA_SERVO_SPEED;
-             } else if (axis6 == -1.0) {
-             upDownServoValue-=CAMERA_SERVO_SPEED;
-             }
-            
-             if (leftRightServoValue>1) {
-             leftRightServoValue = 1;
-             } else if (leftRightServoValue<0) {
-             leftRightServoValue = 0;
-             }
-             if (upDownServoValue>1) {
-             upDownServoValue = 1;
-             } else if (upDownServoValue<0) {
-             upDownServoValue = 0;
-             }
-            
-             cameraLeftRightServo.set(leftRightServoValue);
-             cameraUpDownServo.set(upDownServoValue);
-            
-             if (joyOperator.getRawButton(JOYSTICK_TAKE_PICTURE_BUTTON) && (!oldPictureValue)) {
-             if (RobotVision.takePicture()) {
-             oldPictureValue = true;
-             } else {
-             oldPictureValue = false;
-             }
-             } else {
-             oldPictureValue = false;
-             }
-             */
+            double axis5 = joyOperator.getRawAxis(5);
+            double axis6 = joyOperator.getRawAxis(6);
+
+            lcd.println(DriverStationLCD.Line.kUser3, 1, "5 is " + axis5);
+            lcd.println(DriverStationLCD.Line.kUser4, 1, "6 is " + axis6);
+            lcd.updateLCD();
+
+            SmartDashboard.putNumber("Axis 5", axis5);
+            SmartDashboard.putNumber("Axis 6", axis6);
+
+            if (axis5 == 1.0) {
+                leftRightServoValue += CAMERA_SERVO_SPEED;
+            } else if (axis5 == -1.0) {
+                leftRightServoValue -= CAMERA_SERVO_SPEED;
+            }
+            if (axis6 == 1.0) {
+                upDownServoValue += CAMERA_SERVO_SPEED;
+            } else if (axis6 == -1.0) {
+                upDownServoValue -= CAMERA_SERVO_SPEED;
+            }
+
+            if (leftRightServoValue > 1) {
+                leftRightServoValue = 1;
+            } else if (leftRightServoValue < 0) {
+                leftRightServoValue = 0;
+            }
+            if (upDownServoValue > 1) {
+                upDownServoValue = 1;
+            } else if (upDownServoValue < 0) {
+                upDownServoValue = 0;
+            }
+
+            cameraLeftRightServo.set(leftRightServoValue);
+            cameraUpDownServo.set(upDownServoValue);
+
+            if (joyOperator.getRawButton(JOYSTICK_TAKE_PICTURE_BUTTON) && (!oldPictureValue)) {
+                if (RobotVision.takePicture()) {
+                    oldPictureValue = true;
+                } else {
+                    oldPictureValue = false;
+                }
+            } else {
+                oldPictureValue = false;
+            }
             //</editor-fold>
             //<editor-fold desc="Lifter" defaultstate="collapsed">
             if (joyOperator.getRawButton(JOYSTICK_LIFTER_UP_BUTTON)) {
@@ -300,15 +298,15 @@ public class FRC2014 extends SimpleRobot {
             }
 
             if (lifterDirection == LIFTER_GOING_UP) {
-                lcd.println(DriverStationLCD.Line.kUser3, 1, "up"+"                        ");
+                lcd.println(DriverStationLCD.Line.kUser3, 1, "up" + "                        ");
                 if (BallLifter.moveUp()) { //if moving up is finished, stop
                     lifterDirection = LIFTER_NOT_MOVING;
-                    lcd.println(DriverStationLCD.Line.kUser3, 1, "none"+"                        ");
+                    lcd.println(DriverStationLCD.Line.kUser3, 1, "none" + "                        ");
                 }
             } else if (lifterDirection == LIFTER_GOING_DOWN) {
-                lcd.println(DriverStationLCD.Line.kUser3, 1, "down"+"                        ");
+                lcd.println(DriverStationLCD.Line.kUser3, 1, "down" + "                        ");
                 if (BallLifter.moveDown()) { //if moving down is finished, stop
-                    lcd.println(DriverStationLCD.Line.kUser3, 1, "none"+"                        ");
+                    lcd.println(DriverStationLCD.Line.kUser3, 1, "none" + "                        ");
                     lifterDirection = LIFTER_NOT_MOVING;
                 }
             }

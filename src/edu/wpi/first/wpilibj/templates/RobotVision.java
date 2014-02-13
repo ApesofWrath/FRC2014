@@ -39,7 +39,7 @@ public class RobotVision {
     static final int Y_IMAGE_RES = 480;		//X Image resolution in pixels, should be 120, 240 or 480
     static final double AXIS_M1013 = 49;		//Axis M1013
     static final double AXIS_M1011 = 37.4;              //Axis M1011
-    static final double VIEW_ANGLE = AXIS_M1011;
+    static final double VIEW_ANGLE = AXIS_M1013;
     static final double PI = 3.141592653;
 
     //Score limits used for target identification
@@ -185,7 +185,7 @@ public class RobotVision {
             //image.write("/image.bmp");
             //original values 105, 137, 230, 255, 133, 183
             //seeming to work values are 143, 227, 0, 255, 231, 255
-            BinaryImage thresholdImage = image.thresholdHSV(143, 227, 0, 255, 231, 255);   // keep only green objects
+            BinaryImage thresholdImage = image.thresholdHSV(81, 255, 100, 255, 215, 255);   // keep only green objects
             //thresholdImage.write("/threshold.bmp");
             BinaryImage filteredImage = thresholdImage.particleFilter(cc);           // filter out small particles
             //System.out.println("filteredImage: "+filteredImage);
@@ -323,7 +323,7 @@ public class RobotVision {
         height = Math.min(report.boundingRectHeight, rectLong);
         targetHeight = 32;
 
-        return Y_IMAGE_RES * targetHeight / (height * 12 * 2 * Math.tan(VIEW_ANGLE * Math.PI / (180 * 2)));
+        return Y_IMAGE_RES * targetHeight / (height * 12 * 2 * Math.tan(VIEW_ANGLE * Math.PI / (180)));
     }
 
     /**
