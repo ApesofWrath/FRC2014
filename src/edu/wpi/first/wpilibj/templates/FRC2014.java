@@ -7,6 +7,7 @@ import edu.wpi.first.wpilibj.SimpleRobot;
 import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.DriverStationLCD;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Servo;
 import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.Timer;
@@ -34,12 +35,15 @@ public class FRC2014 extends SimpleRobot {
 
     //defining digital io constants. these go on the digital sidecar
     static final int PRESSURE_SENSOR_PORT = 4;
-    static final int KICKER_ENCODER_PORT_A = 6;
-    static final int KICKER_ENCODER_PORT_B = 7;
+    static final int KICKER_ENCODER1_PORT_A = 6;
+    static final int KICKER_ENCODER1_PORT_B = 7;
+    static final int KICKER_ENCODER2_PORT_A = 3;
+    static final int KICKER_ENCODER2_PORT_B = 5;
     static final int KICKER_OPTICAL_SENSOR_PORT = 2;
     static final int LIFTER_ENCODER_PORT_A = 8;
     static final int LIFTER_ENCODER_PORT_B = 9;
     static final int LIFTER_LIMIT_SWITCH_BOTTOM = 1;
+    
 
     //defining solenoid constants. these go directly on the cRIO
     static final int SOLENOID_LEFT_SHIFT_HIGH_PORT = 2; //gear shifting
@@ -355,11 +359,21 @@ public class FRC2014 extends SimpleRobot {
             talonLoader, //6
             talonBackup //7
         };
+        Encoder kickerEncoder1, kickerEncoder2, lifterEncoder;
+        kickerEncoder1 = new Encoder(KICKER_ENCODER1_PORT_A, KICKER_ENCODER1_PORT_B);
+        kickerEncoder2 = new Encoder(KICKER_ENCODER2_PORT_A, KICKER_ENCODER2_PORT_B);
+        lifterEncoder = new Encoder(LIFTER_ENCODER_PORT_A, LIFTER_ENCODER_PORT_B);
+        kickerEncoder1.start();
+        kickerEncoder2.start();
+        lifterEncoder.start();
         Servo[] servos = {cameraLeftRightServo, cameraUpDownServo};
 
         while (isTest() && isEnabled()) {
             RobotMotorTester.motorTest(motors, 1, joyOperator, lcd);
             RobotMotorTester.servoTest(servos, 9, joyOperator, lcd);
+            SmartDashboard.putNumber("Kicker Encoder 1", kickerEncoder1.get());
+            SmartDashboard.putNumber("Kicker Encoder 2", kickerEncoder2.get());
+            SmartDashboard.putNumber("Lifter Encoder ", lifterEncoder.get());
 //            kickerStates.setSetpoint(KICKER_ENCODER_REST_POSITION);
 //            kickerStates.reset();
 //            kickerStates.setState(kickerStates.INIT); //makes sure robot is on init
