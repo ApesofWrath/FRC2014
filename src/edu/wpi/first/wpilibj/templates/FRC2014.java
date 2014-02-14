@@ -100,7 +100,6 @@ public class FRC2014 extends SimpleRobot {
     private KickerStateMachine kickerStates;
     private int driveMode;
     private int lifterDirection = LIFTER_NOT_MOVING;
-    
 
     private Talon talonFrontLeft, talonFrontRight, talonBackLeft, talonBackRight,
             talonKickerLeft, talonKickerRight, talonLoader, talonBackup;
@@ -144,13 +143,15 @@ public class FRC2014 extends SimpleRobot {
     }
 
     public void robotInit() { //use this method for setup of any kind
-        SmartDashboard.putBoolean("Camera Initialized", false);
-        System.out.println("Attempting to initialize Camera.");
+        /*
+         SmartDashboard.putBoolean("Camera Initialized", false);
+         System.out.println("Attempting to initialize Camera.");
+         double time = RobotVision.initializeCamera();
+         System.out.println("Initialization completed in " + time + " seconds");
+         SmartDashboard.putBoolean("Camera Initialized", (time < 0));
+         */
         driver.setInvertedMotor(RobotDrive.MotorType.kFrontRight, false);
         driver.setInvertedMotor(RobotDrive.MotorType.kRearRight, false);
-        double time = RobotVision.initializeCamera();
-        System.out.println("Initialization completed in " + time + " seconds");
-        SmartDashboard.putBoolean("Camera Initialized", (time < 0));
 
         //comment compressor if you are not using it
         //compress.start();
@@ -339,9 +340,18 @@ public class FRC2014 extends SimpleRobot {
     public void test() {
         lcd.println(DriverStationLCD.Line.kUser1, 1, "test v" + VERSION_NUMBER);
         lcd.updateLCD();
-        Talon[] motors = {talonFrontLeft, talonFrontRight, talonBackLeft, talonBackRight,
-            talonKickerLeft, talonKickerRight, talonLoader, talonBackup};
+        Talon[] motors = {
+            talonKickerLeft,//0
+            talonBackLeft, //1
+            talonFrontLeft, //2
+            talonKickerRight, //3
+            talonBackRight,//4
+            talonFrontRight, //5
+            talonLoader, //6
+            talonBackup //7
+        };
         Servo[] servos = {cameraLeftRightServo, cameraUpDownServo};
+
         while (isTest() && isEnabled()) {
             RobotMotorTester.motorTest(motors, 1, joyOperator, lcd);
             RobotMotorTester.servoTest(servos, 9, joyOperator, lcd);
@@ -350,6 +360,7 @@ public class FRC2014 extends SimpleRobot {
 //            kickerStates.setState(kickerStates.INIT); //makes sure robot is on init
 //            while (isTest() && isEnabled()) {
 //            kickerStates.stateMachine();
+
         }
     }
 }

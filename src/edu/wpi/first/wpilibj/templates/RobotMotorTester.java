@@ -37,12 +37,27 @@ public class RobotMotorTester {
         System.out.println("motor test.  Z:" + zAxis);
 
         for (int i = 0; i < motors.length; i++) {
+            if (!joyOperator.getRawButton(11)) {
+                motors[0].set(+0.0);
+                motors[3].set(-0.0);
+                lcd.println(DriverStationLCD.Line.kUser5, 1, " ");
+                lcd.println(DriverStationLCD.Line.kUser5, 4, " ");
+
+
+            }
             if (joyOperator.getRawButton(i + start)) {
                 motors[i].set(zAxis);
                 lcd.println(DriverStationLCD.Line.kUser5, i + start, "" + (i + start));
             } else {
                 motors[i].set(0);
                 lcd.println(DriverStationLCD.Line.kUser5, i + start, " ");
+            }
+            if (joyOperator.getRawButton(11)) {
+                motors[0].set(+zAxis);
+                motors[3].set(-zAxis);
+                lcd.println(DriverStationLCD.Line.kUser5, 1, "1");
+                lcd.println(DriverStationLCD.Line.kUser5, 4, "4");
+
             }
         }
         lcd.updateLCD();
@@ -66,7 +81,7 @@ public class RobotMotorTester {
 
         for (int i = 0; i < servos.length; i++) {
             if (joyOperator.getRawButton(i + start)) {
-                servos[i].set((1-zAxis)/2);
+                servos[i].set((1 - zAxis) / 2);
                 lcd.println(DriverStationLCD.Line.kUser5, i + start, "" + (i + start));
             } else {
                 servos[i].set(0.5);
