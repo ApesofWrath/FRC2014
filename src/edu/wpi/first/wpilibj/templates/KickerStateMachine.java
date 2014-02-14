@@ -55,7 +55,7 @@ public class KickerStateMachine {
         sampleRate = ds.getAnalogIn(4);
         pid = new PIDController(kP, kI, kD, kickerEncoder, kickerMotor, sampleRate);
         pid.enable();
-        kickerEncoder.setPIDSourceParameter(PIDSource.PIDSourceParameter.kDistance);
+//        kickerEncoder.setPIDSourceParameter(PIDSource.PIDSourceParameter.kDistance);
         // Start in INIT
         state = INIT;
     }
