@@ -9,6 +9,7 @@ import edu.wpi.first.wpilibj.DriverStationLCD;
 import edu.wpi.first.wpilibj.DriverStation;
 import edu.wpi.first.wpilibj.Servo;
 import edu.wpi.first.wpilibj.Talon;
+import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /*
@@ -166,30 +167,18 @@ public class FRC2014 extends SimpleRobot {
         lcd.updateLCD();
         cameraLeftRightServo.set(SmartDashboard.getNumber("Left Right Camera", .5));
         cameraUpDownServo.set(SmartDashboard.getNumber("Up Down Camera", .5));
-//        RobotVision.ResultReport results;
-//         for(int i=0; i<3; i++) {
-//         results = RobotVision.cameraVision();
-//         if(results.targetExists && results.isHot){
-//         kickerStates.reset();
-//         kickerStates.setState(kickerStates.KICK);
-//         while(kickerStates.getState()!=kickerStates.INIT) {
-//         kickerStates.stateMachine();
-//         }
-//         break;
-//         }
-//         else {
-//         cameraLeftRightServo.set(.5+(DIRECTION*.1));
-//         cameraUpDownServo.set(.5+(DIRECTION*.1))
-//         }
-//         }
-//         //turnFortyFiveDegrees();
-//         kickerStates.reset();
-//         kickerStates.setState(kickerStates.KICK);
-//         while(kickerStates.getState()!=kickerStates.INIT) {
-//         kickerStates.stateMachine();
-//         }
+        
+        Timer autonomousTimer = new Timer();
+        autonomousTimer.start();
+        
+        while (BallLifter.moveDown()) {
+            //do nothing, lifter is moving down.
+        }
+        
+        RobotVision.ResultReport results;
+        
         while (isAutonomous() && isEnabled()) {
-            RobotVision.ResultReport results = RobotVision.cameraVision();
+            results = RobotVision.cameraVision();
             if (results == null) {
                 lcd.println(DriverStationLCD.Line.kUser2, 1, "failure                        ");
                 lcd.updateLCD();
@@ -203,6 +192,22 @@ public class FRC2014 extends SimpleRobot {
             SmartDashboard.putBoolean("Target", results.targetExists);
             SmartDashboard.putBoolean("Hot", results.isHot);
             SmartDashboard.putNumber("Distance", results.distance);
+            
+            if (results.isHot) {
+//                shoot();
+                RobotVision.takePicture();
+                while (BallLifter.moveUp()) {
+                    //do nothing while lifter is moving up
+                }
+//                moveForward();
+            } else if (autonomousTimer.get() > 5000) {
+//                shoot();
+                RobotVision.takePicture();
+                while (BallLifter.moveUp()) {
+                    //do nothing while lifter is moving up
+                }
+//                moveForward();
+            }
         }
     }
 
