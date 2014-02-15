@@ -1,6 +1,7 @@
 package edu.wpi.first.wpilibj.templates;
 
 import edu.wpi.first.wpilibj.Compressor;
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.SimpleRobot;
@@ -30,18 +31,29 @@ public class FRC2014 extends SimpleRobot {
     static final int MOTOR_KICKER_LEFT_PWM = 1;
     static final int MOTOR_LOADER_PWM = 7;
     static final int MOTOR_BACKUP_PWM = 8;
+    
     static final int SERVO_CAMERA_LR_PWM = 9;
     static final int SERVO_CAMERA_UD_PWM = 10;
 
     //defining digital io constants. these go on the digital sidecar
-    static final int PRESSURE_SENSOR_PORT = 4;
-    static final int KICKER_ENCODER1_PORT_A = 6;
-    static final int KICKER_ENCODER1_PORT_B = 7;
-    static final int KICKER_ENCODER2_PORT_A = 3;
-    static final int KICKER_ENCODER2_PORT_B = 5;
-    static final int KICKER_OPTICAL_SENSOR_PORT = 2;
-    static final int LIFTER_ENCODER_PORT_A = 8;
-    static final int LIFTER_ENCODER_PORT_B = 9;
+    static final int PRESSURE_SENSOR_PORT = 2;
+    
+    static final int KICKER_LEFT_ENCODER_PORT_A = 3; //6;
+    static final int KICKER_LEFT_ENCODER_PORT_B = 4; //7;
+    
+    static final int KICKER_RIGHT_ENCODER_PORT_A = 7;
+    static final int KICKER_RIGHT_ENCODER_PORT_B = 8;
+    
+    static final int LEFT_DRIVE_ENCODER_PORT_A = 5;
+    static final int LEFT_DRIVE_ENCODER_PORT_B = 6;
+    static final int RIGHT_DRIVE_ENCODER_PORT_A = 11;
+    static final int RIGHT_DRIVE_ENCODER_PORT_B = 12;
+    static final int KICKER_OPTICAL_SENSOR_PORT = 13;
+    static final int LIFTER_OPTICAL_SENSOR_PORT = 14;
+    
+    static final int LIFTER_ENCODER_PORT_A = 9;
+    static final int LIFTER_ENCODER_PORT_B = 10;
+    
     static final int LIFTER_LIMIT_SWITCH_BOTTOM = 1;
     
 
@@ -66,19 +78,20 @@ public class FRC2014 extends SimpleRobot {
     static final int JOYSTICK_HIGH_SHIFT_BUTTON = 4; //for left joystick
     static final int JOYSTICK_LOW_SHIFT_BUTTON = 5; //for left joystick
 
-    static final int JOYSTICK_LOAD_BUTTON = 3; //for operator joystick
+    static final int JOYSTICK_LIFTER_UP_DOWN_TOGGLE_BUTTON = 3; //for operator joystick
     static final int JOYSTICK_FIRE_BUTTON = 1; //for operator joystick
+    static final int JOYSTICK_LOAD_BUTTON = 2;
     static final int JOYSTICK_RESET_BUTTON = 2; //for operator joystick
     static final int SET_SAMPLE_RATE_BUTTON = 6; //for operator joystick
     static final int JOYSTICK_TAKE_PICTURE_BUTTON = 11; //for operator joystick
-    static final int JOYSTICK_LIFTER_UP_BUTTON = 4; //for operator joystick
-    static final int JOYSTICK_LIFTER_DOWN_BUTTON = 5; //for operator joystick
+    static final int JOYSTICK_MANUAL_BUTTON = 5; //for operator joystick
 
     //defining encoder positions
-    static final int KICKER_ENCODER_TOP_POSITION = 55; //loading is positive
-    static final int KICKER_ENCODER_KICK_POSITION = -16; //kick is negative
+    static final int KICKER_ENCODER_TOP_POSITION = -160;
+    static final int KICKER_ENCODER_KICK_POSITION = 150;
     static final int KICKER_ENCODER_REST_POSITION = 0;
-    static final int LIFTER_ENCODER_TOP_VALUE = 50;
+    static final int LIFTER_ENCODER_TOP_VALUE = 0;
+    static final int LIFTER_ENCODER_BOTTOM_VALUE = -40;
 
     //defining speeds
     static final double CAMERA_SERVO_SPEED = 0.002;
@@ -87,6 +100,9 @@ public class FRC2014 extends SimpleRobot {
     static final int LIFTER_GOING_UP = 1;
     static final int LIFTER_GOING_DOWN = 2;
     static final int LIFTER_NOT_MOVING = 3;
+    static final int KICKER_LOADING = 1;
+    static final int KICKER_KICKING = 2;
+    static final int KICKER_NOT_MOVING = 3;
 
     //defining pneumatic objects
     private Compressor compress;
@@ -100,13 +116,18 @@ public class FRC2014 extends SimpleRobot {
     private Joystick joyLeft;
     private Joystick joyRight;
     private Joystick joyOperator;
+    protected static Encoder kickerEncoder1, kickerEncoder2, lifterEncoder, rightDriveEncoder, leftDriveEncoder;
     private Servo cameraUpDownServo, cameraLeftRightServo;
     static final String VERSION_NUMBER = "0.2.4";
-    private KickerStateMachine kickerStates;
+    private DigitalInput kickerOpticalSensor, lifterOpticalSensor;
+//    private KickerStateMachine kickerStates;
     private int driveMode;
     private int lifterDirection = LIFTER_NOT_MOVING;
+    private int kickerDirection = KICKER_NOT_MOVING;
+    protected static boolean isInManualControl = false;
+    //to check whether or not operator is using emergency manual control; used in state machine IDLE
 
-    private Talon talonFrontLeft, talonFrontRight, talonBackLeft, talonBackRight,
+    protected static Talon talonFrontLeft, talonFrontRight, talonBackLeft, talonBackRight,
             talonKickerLeft, talonKickerRight, talonLoader, talonBackup;
 
     // </editor-fold>
@@ -124,7 +145,9 @@ public class FRC2014 extends SimpleRobot {
 
         driveMode = 1; // default to tank
 
-        //kickerStates = new KickerStateMachine();
+        kickerOpticalSensor = new DigitalInput(KICKER_OPTICAL_SENSOR_PORT);
+        lifterOpticalSensor = new DigitalInput(LIFTER_OPTICAL_SENSOR_PORT);
+        
         compress = new Compressor(PRESSURE_SENSOR_PORT, SPIKE_PRESSURE_RELAY);
 
         leftDriveSolenoid = new DoubleSolenoid(SOLENOID_LEFT_SHIFT_HIGH_PORT,
@@ -143,6 +166,8 @@ public class FRC2014 extends SimpleRobot {
         talonKickerRight = new Talon(MOTOR_KICKER_RIGHT_PWM);
         talonLoader = new Talon(MOTOR_LOADER_PWM);
         talonBackup = new Talon(MOTOR_BACKUP_PWM);
+        
+        //kickerStates = new KickerStateMachine(talonKickerLeft, talonKickerRight);
 
         driver = new RobotDrive(talonFrontLeft, talonBackLeft, talonFrontRight, talonBackRight);
     }
@@ -158,8 +183,20 @@ public class FRC2014 extends SimpleRobot {
         driver.setInvertedMotor(RobotDrive.MotorType.kFrontRight, false);
         driver.setInvertedMotor(RobotDrive.MotorType.kRearRight, false);
 
-        //comment compressor if you are not using it
-        //compress.start();
+        kickerEncoder1 = new Encoder(KICKER_LEFT_ENCODER_PORT_A, KICKER_LEFT_ENCODER_PORT_B);
+        kickerEncoder2 = new Encoder(KICKER_RIGHT_ENCODER_PORT_A, KICKER_RIGHT_ENCODER_PORT_B);
+        lifterEncoder = new Encoder(LIFTER_ENCODER_PORT_A, LIFTER_ENCODER_PORT_B);
+ //       rightDriveEncoder = new Encoder(RIGHT_DRIVE_ENCODER_PORT_A, RIGHT_DRIVE_ENCODER_PORT_B);
+        leftDriveEncoder = new Encoder(LEFT_DRIVE_ENCODER_PORT_A, LEFT_DRIVE_ENCODER_PORT_B);
+        kickerEncoder1.start();
+        kickerEncoder2.start();
+        lifterEncoder.start();
+//        rightDriveEncoder.start();
+        leftDriveEncoder.start();
+        
+        //comment compressor  out if you are not using it
+        compress.start();
+        
         SmartDashboard.putString("Version Number", VERSION_NUMBER);
     }
 
@@ -171,6 +208,8 @@ public class FRC2014 extends SimpleRobot {
         lcd.updateLCD();
         cameraLeftRightServo.set(SmartDashboard.getNumber("Left Right Camera", .5));
         cameraUpDownServo.set(SmartDashboard.getNumber("Up Down Camera", .5));
+        
+        kickerDirection = KICKER_NOT_MOVING;
         
         Timer autonomousTimer = new Timer();
         autonomousTimer.start();
@@ -221,11 +260,18 @@ public class FRC2014 extends SimpleRobot {
     public void operatorControl() {
         lcd.println(DriverStationLCD.Line.kUser1, 1, "teleoperated v" + VERSION_NUMBER);
         lcd.updateLCD();
+//        kickerStates.setState(kickerStates.IDLE);
         boolean oldPictureValue = false;
         double upDownServoValue = 0.5, leftRightServoValue = 0.5;
 
+        kickerDirection = KICKER_NOT_MOVING;
+        
         while (isOperatorControl() && isEnabled()) {
-            lcd.println(DriverStationLCD.Line.kUser2, 1, " " + driveMode);
+            lcd.println(DriverStationLCD.Line.kUser2, 1, "" + driveMode);
+            lcd.println(DriverStationLCD.Line.kUser3, 1, "" + joyLeft.getZ());
+            lcd.println(DriverStationLCD.Line.kUser4, 1, "" + joyRight.getZ());
+            lcd.println(DriverStationLCD.Line.kUser5, 1, "" + joyOperator.getThrottle());
+            lcd.updateLCD();
 
             if (joyLeft.getRawButton(JOYSTICK_ARCADEMODE_BUTTON)
                     || joyRight.getRawButton(JOYSTICK_ARCADEMODE_BUTTON)) {
@@ -239,7 +285,8 @@ public class FRC2014 extends SimpleRobot {
                     || joyRight.getRawButton(JOYSTICK_SPLITARCADEMODE_BUTTON)) {
                 driveMode = -1;
             }
-
+            
+            
             // <editor-fold defaultstate="collapsed" desc="Drive Toggler">
             if (driveMode > 0) {
                 driver.tankDrive(joyLeft, joyRight);
@@ -274,7 +321,7 @@ public class FRC2014 extends SimpleRobot {
              */
             //</editor-fold>
             // <editor-fold defaultstate="collapsed" desc="Camera Mover">
-            double axis5 = joyOperator.getRawAxis(5);
+            /*double axis5 = joyOperator.getRawAxis(5);
             double axis6 = joyOperator.getRawAxis(6);
 
             lcd.println(DriverStationLCD.Line.kUser3, 1, "5 is " + axis5);
@@ -317,12 +364,12 @@ public class FRC2014 extends SimpleRobot {
                 }
             } else {
                 oldPictureValue = false;
-            }
+            }*/
             //</editor-fold>
             //<editor-fold desc="Lifter" defaultstate="collapsed">
-            if (joyOperator.getRawButton(JOYSTICK_LIFTER_UP_BUTTON)) {
+            /*if (joyOperator.getRawButton(JOYSTICK_LIFTER_UP_DOWN_TOGGLE_BUTTON) && lifterDirection == LIFTER_NOT_MOVING) {
                 lifterDirection = LIFTER_GOING_UP;
-            } else if (joyOperator.getRawButton(JOYSTICK_LIFTER_DOWN_BUTTON)) {
+            } else if (joyOperator.getRawButton(JOYSTICK_LIFTER_UP_DOWN_TOGGLE_BUTTON) && lifterDirection == LIFTER_NOT_MOVING) {
                 lifterDirection = LIFTER_GOING_DOWN;
             }
 
@@ -338,8 +385,34 @@ public class FRC2014 extends SimpleRobot {
                     lcd.println(DriverStationLCD.Line.kUser3, 1, "none" + "                        ");
                     lifterDirection = LIFTER_NOT_MOVING;
                 }
-            }
+            }*/
             //</editor-fold>
+            
+            /*if (joyOperator.getRawButton(JOYSTICK_LOAD_BUTTON)) {
+                kickerDirection = KICKER_LOADING;
+            } else if (joyOperator.getRawButton(JOYSTICK_FIRE_BUTTON)) {
+                lifterDirection = KICKER_KICKING;
+            }*/
+
+            if (joyOperator.getRawButton(JOYSTICK_LOAD_BUTTON)) {
+                if (Kicker.load()) { //if moving up is finished, stop
+                    Kicker.stop();
+                }
+            } else if (joyOperator.getRawButton(JOYSTICK_FIRE_BUTTON)) {
+                if (Kicker.kick()) { //if moving down is finished, stop
+                    Kicker.stop();
+                }
+            }
+            
+            if (joyOperator.getRawButton(8) || kickerOpticalSensor.get() == true) {
+                Kicker.resetEncoders();
+            }
+                        
+            /*if (joyOperator.getRawButton(JOYSTICK_MANUAL_BUTTON)) {
+                isInManualControl = true;
+            } else {
+                isInManualControl = false;
+            }*/
         }
     }
 
@@ -359,26 +432,25 @@ public class FRC2014 extends SimpleRobot {
             talonLoader, //6
             talonBackup //7
         };
-        Encoder kickerEncoder1, kickerEncoder2, lifterEncoder;
-        kickerEncoder1 = new Encoder(KICKER_ENCODER1_PORT_A, KICKER_ENCODER1_PORT_B);
-        kickerEncoder2 = new Encoder(KICKER_ENCODER2_PORT_A, KICKER_ENCODER2_PORT_B);
-        lifterEncoder = new Encoder(LIFTER_ENCODER_PORT_A, LIFTER_ENCODER_PORT_B);
-        kickerEncoder1.start();
-        kickerEncoder2.start();
-        lifterEncoder.start();
+        
         Servo[] servos = {cameraLeftRightServo, cameraUpDownServo};
 
+        kickerDirection = KICKER_NOT_MOVING;
+        
         while (isTest() && isEnabled()) {
+            if (joyOperator.getRawButton(8) || kickerOpticalSensor.get() == true) {
+                kickerEncoder1.reset();
+                kickerEncoder2.reset();
+                lifterEncoder.reset();
+            }
             RobotMotorTester.motorTest(motors, 1, joyOperator, lcd);
-            RobotMotorTester.servoTest(servos, 9, joyOperator, lcd);
-            SmartDashboard.putNumber("Kicker Encoder 1", kickerEncoder1.get());
-            SmartDashboard.putNumber("Kicker Encoder 2", kickerEncoder2.get());
-            SmartDashboard.putNumber("Lifter Encoder ", lifterEncoder.get());
-//            kickerStates.setSetpoint(KICKER_ENCODER_REST_POSITION);
-//            kickerStates.reset();
-//            kickerStates.setState(kickerStates.INIT); //makes sure robot is on init
-//            while (isTest() && isEnabled()) {
-//            kickerStates.stateMachine();
+            System.out.println("Kicker Encoder 1 " + kickerEncoder1.get());
+            System.out.println("Kicker Encoder 2 " + kickerEncoder2.get());
+            System.out.println("Lifter Encoder " + lifterEncoder.get());
+            System.out.println("Left Drive Encoder " + leftDriveEncoder.get());
+ //           System.out.println("Right Drive Encoder " + rightDriveEncoder.get());
+            System.out.println("Lifter Optical" + lifterOpticalSensor.get());
+            System.out.println("Kicker Optical" + kickerOpticalSensor.get());
 
         }
     }

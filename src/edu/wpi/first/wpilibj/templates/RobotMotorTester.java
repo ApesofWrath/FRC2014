@@ -57,7 +57,6 @@ public class RobotMotorTester {
                 motors[3].set(-zAxis);
                 lcd.println(DriverStationLCD.Line.kUser5, 1, "1");
                 lcd.println(DriverStationLCD.Line.kUser5, 4, "4");
-
             }
         }
         lcd.updateLCD();
