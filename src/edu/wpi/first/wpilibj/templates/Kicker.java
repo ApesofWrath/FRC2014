@@ -20,8 +20,14 @@ public class Kicker {
     static private Encoder kickerRightEncoder;
     static private Joystick joyOperator;
     static private Joystick joyRight;
+    static private DigitalInput kickerOptSensor;
 
     static private DriverStationLCD lcd;
+
+    static boolean isCalibrated = false;
+
+    static boolean oldKickOptState = true;
+    static boolean newKickOptState = oldKickOptState;
 
     static { //analogous to constructor
         lcd = DriverStationLCD.getInstance();
@@ -31,44 +37,64 @@ public class Kicker {
         kickerRightEncoder = FRC2014.kickerEncoder2;
         kickerLeftMotor = FRC2014.talonKickerLeft;
         kickerRightMotor = FRC2014.talonKickerRight;
+        kickerOptSensor = FRC2014.kickerOpticalSensor;
+      
     }
 
     public static boolean load() {
         if (kickerLeftEncoder.get() <= FRC2014.KICKER_ENCODER_TOP_POSITION) {
-            lcd.println(DriverStationLCD.Line.kUser5, 1, "finished moving                             ");
+            lcd.println(DriverStationLCD.Line.kUser6, 1, "finished moving                             ");
             lcd.updateLCD();
             kickerLeftMotor.set(0);
             kickerRightMotor.set(0);
             return true;
         }
-        kickerLeftMotor.set(joyOperator.getThrottle()/2 + .5);
-        kickerRightMotor.set(-1 * joyOperator.getThrottle()/2 + .5);
-        lcd.println(DriverStationLCD.Line.kUser5, 1, "moving                                       ");
+        if (!isCalibrated) {
+            newKickOptState = kickerOptSensor.get();
+            if (oldKickOptState && !newKickOptState) {
+                resetEncoders();
+                isCalibrated = true;
+            }
+            oldKickOptState = newKickOptState;
+        }
+        //double throttle = joyOperator.getThrottle();
+        //throttle = (throttle/2.0)+0.5;
+        //throttle = (throttle/-2.0)+0.5; //down == 0, up == 1
+        double throttle = FRC2014.COCKING_SPEED;
+        kickerLeftMotor.set(throttle);
+        kickerRightMotor.set(-1.0 * throttle);
+        lcd.println(DriverStationLCD.Line.kUser6, 1, "loading                                       ");
         lcd.updateLCD();
         return false;
     }
 
-    public static boolean kick() {
+    public static boolean kick() { 
         if (kickerLeftEncoder.get() >= FRC2014.KICKER_ENCODER_KICK_POSITION) {
-            lcd.println(DriverStationLCD.Line.kUser5, 1, "finished moving                             ");
+            lcd.println(DriverStationLCD.Line.kUser6, 1, "finished moving                             ");
             lcd.updateLCD();
             kickerLeftMotor.set(0);
             kickerRightMotor.set(0);
             return true;
         }
-        kickerLeftMotor.set(-1 * joyRight.getZ()/2 + .5);
-        kickerRightMotor.set(joyRight.getZ()/2 + .5);
-        lcd.println(DriverStationLCD.Line.kUser5, 1, "moving                                       ");
+        //double throttle = joyOperator.getZ();
+        //throttle = (throttle/2.0)+0.5;
+        //throttle = (throttle/-2.0)+0.5;  // down == 0, up == 1
+        double throttle = 1.0;
+        kickerLeftMotor.set(-1.0 * throttle);
+        kickerRightMotor.set(throttle);
+        lcd.println(DriverStationLCD.Line.kUser6, 1, "kicking                                       ");
         lcd.updateLCD();
         return false;
     }
-    
+
     public static void resetEncoders() {
         kickerLeftEncoder.reset();
         kickerRightEncoder.reset();
     }
 
     public static void stop() {
+        lcd.println(DriverStationLCD.Line.kUser6, 1, "stopping                                       ");
+        lcd.updateLCD();
         kickerLeftMotor.set(0);
         kickerRightMotor.set(0);
     }

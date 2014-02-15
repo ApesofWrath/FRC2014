@@ -16,12 +16,14 @@ import edu.wpi.first.wpilibj.Talon;
  */
 public class BallLifter {
 
-    static final double MOTOR_SPEED = 0.2;
+    static final double MOTOR_SPEED = 0.4;
 
     static private Talon lifterMotor;
     static private Encoder lifterEncoder;
     static private Joystick joyOperator;
     static private Joystick joyLeft;
+    static protected boolean isUp;
+    static protected boolean isDown;
 
     static private DriverStationLCD lcd;
 
@@ -31,23 +33,33 @@ public class BallLifter {
         joyLeft = new Joystick(FRC2014.JOYSTICK_LEFT_USB);
         lifterMotor = FRC2014.talonLoader;
         lifterEncoder = FRC2014.lifterEncoder;
+        isUp = true;
+        isDown = false;
     }
 
     public static boolean moveUp() {
+        isUp = true;
+        isDown = false;
         if (lifterEncoder.get() >= FRC2014.LIFTER_ENCODER_TOP_VALUE) {
             lifterMotor.set(0);
             return true;
         }
+        double throttle = joyLeft.getZ();
+        throttle = (throttle/-2.0)+0.5;
         lifterMotor.set(joyLeft.getZ());
         return false;
     }
 
     public static boolean moveDown() {
+        isUp = false;
+        isDown = true;
         if (lifterEncoder.get() <= FRC2014.LIFTER_ENCODER_BOTTOM_VALUE) {
             lifterMotor.set(0);
             return true;
         }
-        lifterMotor.set(joyLeft.getZ() * -1);
+        double throttle = joyLeft.getZ();
+        throttle = (throttle/-2.0)+0.5;
+        lifterMotor.set(-1 * throttle);
         return false;
     }
 }
