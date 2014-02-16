@@ -22,6 +22,7 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 //TODO:
 //maintenance of kicker and lifter positions
 //manual control for kicker and lifter
+//Add code for reset optical sensor on lifter
 //later: fix encoder reset
 //synchronize kicker motors
 public class FRC2014 extends SimpleRobot {
@@ -89,6 +90,9 @@ public class FRC2014 extends SimpleRobot {
     static final int JOYSTICK_MANUAL_BUTTON = 11; //for operator joystick
     static final int JOYSTICK_TAKE_PICTURE_BUTTON = 2; //for operator joystick
 
+    static final int JOYSTICK_RESET_ENCODERS_BUTTON = 8; // The button in Test to power the Kicker Motors properly
+    static final int JOYSTICK_TEST_KICKER_BUTTON = 11; // The button in Test to power the Kicker Motors properly
+
     //defining encoder positions
     static final int KICKER_ENCODER_TOP_POSITION = -150; // -160, -140 moves to "12:00"
     static final int KICKER_ENCODER_KICK_POSITION = 150;
@@ -121,18 +125,15 @@ public class FRC2014 extends SimpleRobot {
     private Joystick joyLeft;
     private Joystick joyRight;
     private Joystick joyOperator;
-    protected static Encoder kickerEncoder1, kickerEncoder2, lifterEncoder, rightDriveEncoder, leftDriveEncoder;
+    protected static Encoder kickerEncoderLeft, kickerEncoderRight, lifterEncoder, rightDriveEncoder, leftDriveEncoder;
     private Servo cameraUpDownServo, cameraLeftRightServo;
     static final String VERSION_NUMBER = "0.2.4";
     protected static DigitalInput kickerOpticalSensor, lifterOpticalSensor;
     //kickerOpticalSensor normally false, lifterOpticalSensor normally true
-//    private KickerStateMachine kickerStates;
+    // private KickerStateMachine kickerStates;
     private int driveMode;
     private int lifterDirection = LIFTER_NOT_MOVING;
     private int kickerDirection = KICKER_NOT_MOVING;
-    private int numberOfHotPhotos = 0;
-    private boolean needsPhoto = true;
-    //to check whether or not operator is using emergency manual control; used in state machine IDLE
 
     protected static Talon talonFrontLeft, talonFrontRight, talonBackLeft, talonBackRight,
             talonKickerLeft, talonKickerRight, talonLoader, talonBackup;
@@ -192,13 +193,13 @@ public class FRC2014 extends SimpleRobot {
         driver.setInvertedMotor(RobotDrive.MotorType.kFrontRight, true);
         driver.setInvertedMotor(RobotDrive.MotorType.kRearRight, true);
 
-        kickerEncoder1 = new Encoder(KICKER_LEFT_ENCODER_PORT_A, KICKER_LEFT_ENCODER_PORT_B);
-        kickerEncoder2 = new Encoder(KICKER_RIGHT_ENCODER_PORT_A, KICKER_RIGHT_ENCODER_PORT_B);
+        kickerEncoderLeft = new Encoder(KICKER_LEFT_ENCODER_PORT_A, KICKER_LEFT_ENCODER_PORT_B);
+        kickerEncoderRight = new Encoder(KICKER_RIGHT_ENCODER_PORT_A, KICKER_RIGHT_ENCODER_PORT_B);
         lifterEncoder = new Encoder(LIFTER_ENCODER_PORT_A, LIFTER_ENCODER_PORT_B);
         //       rightDriveEncoder = new Encoder(RIGHT_DRIVE_ENCODER_PORT_A, RIGHT_DRIVE_ENCODER_PORT_B);
         leftDriveEncoder = new Encoder(LEFT_DRIVE_ENCODER_PORT_A, LEFT_DRIVE_ENCODER_PORT_B);
-        kickerEncoder1.start();
-        kickerEncoder2.start();
+        kickerEncoderLeft.start();
+        kickerEncoderRight.start();
         lifterEncoder.start();
 //        rightDriveEncoder.start();
         leftDriveEncoder.start();
@@ -219,8 +220,8 @@ public class FRC2014 extends SimpleRobot {
         cameraUpDownServo.set(SmartDashboard.getNumber("Up Down Camera", .5));
         driver.setSafetyEnabled(false);
 
-        kickerEncoder1.reset();
-        kickerEncoder2.reset();
+        kickerEncoderLeft.reset();
+        kickerEncoderRight.reset();
         lifterEncoder.reset();
         leftDriveEncoder.reset();
         //      rightDriveEncoder.reset();
@@ -231,62 +232,79 @@ public class FRC2014 extends SimpleRobot {
         Timer autonomousTimer = new Timer();
         autonomousTimer.start();
 
-        //if BallLifter.moveDown() never returns true, then quit after autonomous is finished or we disable
-        while (BallLifter.moveDown() && isAutonomous() && isEnabled()) {
-            //do nothing, lifter is moving down.
-        }
+        RobotVision.ResultReport result = null;
 
-        RobotVision.ResultReport results;
+        Threads.ImageCaptureRunnable icr = new Threads.ImageCaptureRunnable();
+        Threads.MoveLifterThread mlr = new Threads.MoveLifterThread();
+        Thread t = new Thread(icr);
+        t.start();
+        boolean wasAlive = true;
+        boolean alreadyKicked = false;
+        int numberOfHotPhotos = 0;
+
+        // Move the arm down
+        new Threads.MoveLifterThread().start(Threads.MoveLifterThread.DOWN);
+
+        Thread pictureThread = new Thread(new Runnable() {
+            public void run() {
+                RobotVision.takePicture();
+            }
+        });
 
         while (isAutonomous() && isEnabled()) {
-            results = null;
-            if (needsPhoto) {
-                results = RobotVision.cameraVision();
-                if (results == null) {
+				// Put code here that will always run
+
+            // if the thread hasn't quit yet, then keep looping
+            if (t.isAlive()) {
+                wasAlive = true;
+                continue;
+            }
+            if (!t.isAlive() && wasAlive) // Thread is dead, do post-processing
+            {
+                result = icr.getResult();
+
+                if (result == null) {
                     lcd.println(DriverStationLCD.Line.kUser2, 1, "failure                        ");
                     lcd.updateLCD();
                     continue;
                 }
-                lcd.println(DriverStationLCD.Line.kUser2, 1, "target is " + results.targetExists);
-                lcd.println(DriverStationLCD.Line.kUser3, 1, "hot : " + results.isHot);
-                lcd.println(DriverStationLCD.Line.kUser4, 1, "distance is " + results.distance);
+                lcd.println(DriverStationLCD.Line.kUser2, 1, "target is " + result.targetExists);
+                lcd.println(DriverStationLCD.Line.kUser3, 1, "hot : " + result.isHot);
+                lcd.println(DriverStationLCD.Line.kUser4, 1, "distance is " + result.distance);
                 lcd.updateLCD();
 
-                SmartDashboard.putBoolean("Target", results.targetExists);
-                SmartDashboard.putBoolean("Hot", results.isHot);
-                SmartDashboard.putNumber("Distance", results.distance);
+                SmartDashboard.putBoolean("Target", result.targetExists);
+                SmartDashboard.putBoolean("Hot", result.isHot);
+                SmartDashboard.putNumber("Distance", result.distance);
             }
-            if (results.isHot && needsPhoto) {
-                numberOfHotPhotos++;
-                //If we are taking photos and we get two or more hot photos, fire
-                if (numberOfHotPhotos >= WANTED_NUMBER_OF_HOT_PHOTOS) {
-                    needsPhoto = false;
-                    while (Kicker.load()) {
-                        //do nothing while the kicker is cocking
-                    }
-                    RobotVision.takePicture();
-                    while (Kicker.kick()) {
-                        //do nothing while kicker is kicking
+
+            if (!alreadyKicked) {
+                if (result != null && result.isHot) {
+                    numberOfHotPhotos++;
+                    if (numberOfHotPhotos >= WANTED_NUMBER_OF_HOT_PHOTOS) {
+                        if (BallLifter.isDown) {
+                            new Threads.ShootThread().start();
+                            alreadyKicked = true;
+                        } else {
+                            continue;
+                        }
                     }
 
-                    while (BallLifter.moveUp()) {
-                        //do nothing while lifter is moving up
+                    pictureThread.start();
+                    // move the arm up
+                    new Threads.MoveLifterThread().start(Threads.MoveLifterThread.UP);
+                    new Threads.MoveForwardThread().start();
+                } else if (autonomousTimer.get() > 5000/*ms*/) {
+                    if (BallLifter.isDown) {
+                        alreadyKicked = true;
+                    } else {
+                        continue;
                     }
-                } //If we don't find a hot goal in 5 seconds, fire, becuase then the goal in front will be hot anyway
-            } else if (autonomousTimer.get() > 5000) {
-                needsPhoto = false;
-                //shoot();
-                while (Kicker.load()) {
-                        //do nothing while the kicker is cocking
-                    }
-                    RobotVision.takePicture();
-                    while (Kicker.kick()) {
-                        //do nothing while kicker is kicking
-                    }
-
-                    while (BallLifter.moveUp()) {
-                        //do nothing while lifter is moving up
-                    }
+                    pictureThread.start();
+                    // move the arm up 
+                    new Threads.MoveLifterThread().start(Threads.MoveLifterThread.UP);
+                    new Threads.MoveForwardThread().start();
+                }
             }
         }
     }
@@ -302,8 +320,8 @@ public class FRC2014 extends SimpleRobot {
         double upDownServoValue = 0.5, leftRightServoValue = 0.5;
         driver.setSafetyEnabled(true);
 
-        kickerEncoder1.reset();
-        kickerEncoder2.reset();
+        kickerEncoderLeft.reset();
+        kickerEncoderRight.reset();
         lifterEncoder.reset();
         leftDriveEncoder.reset();
         //       rightDriveEncoder.reset();
@@ -316,11 +334,11 @@ public class FRC2014 extends SimpleRobot {
             lcd.println(DriverStationLCD.Line.kUser4, 1, "" + joyLeft.getZ());
             lcd.println(DriverStationLCD.Line.kUser5, 1, "" + joyOperator.getThrottle());
             lcd.updateLCD();
-            System.out.println("Kicker Encoder 1 " + kickerEncoder1.get());
-            System.out.println("Kicker Encoder 2 " + kickerEncoder2.get());
+
+            System.out.println("Kicker Encoder 1 " + kickerEncoderLeft.get());
+            System.out.println("Kicker Encoder 2 " + kickerEncoderRight.get());
             System.out.println("Lifter Encoder " + lifterEncoder.get());
             //           System.out.println("Left Drive Encoder " + leftDriveEncoder.get());
-            //           System.out.println("Right Drive Encoder " + rightDriveEncoder.get());
             System.out.println("Lifter Optical     " + lifterOpticalSensor.get());
             System.out.println("Kicker Optical     " + kickerOpticalSensor.get());
 
@@ -478,43 +496,27 @@ public class FRC2014 extends SimpleRobot {
     public void test() {
         lcd.println(DriverStationLCD.Line.kUser1, 1, "test v" + VERSION_NUMBER);
         lcd.updateLCD();
-        Talon[] motors = {
-            talonKickerLeft,//0
-            talonBackLeft, //1
-            talonFrontLeft, //2
-            talonKickerRight, //3
-            talonBackRight,//4
-            talonFrontRight, //5
-            talonLoader, //6
-            talonBackup //7
-        };
+        //talonKickerLeft,//0
+        //talonBackLeft, //1
+        //talonFrontLeft, //2
+        //talonKickerRight, //3
+        //talonBackRight,//4
+        //talonFrontRight, //5
+        //talonLoader, //6
+        //talonBackup //7
 
-        kickerEncoder1.reset();
-        kickerEncoder2.reset();
+        kickerEncoderLeft.reset();
+        kickerEncoderRight.reset();
         lifterEncoder.reset();
         leftDriveEncoder.reset();
 //        rightDriveEncoder.reset();
-
-        Servo[] servos = {cameraLeftRightServo, cameraUpDownServo};
 
         kickerDirection = KICKER_NOT_MOVING;
         lifterDirection = LIFTER_NOT_MOVING;
 
         while (isTest() && isEnabled()) {
-            if (joyOperator.getRawButton(8) /*|| kickerOpticalSensor.get() == true*/) {
-                kickerEncoder1.reset();
-                kickerEncoder2.reset();
-                lifterEncoder.reset();
-            }
-            RobotMotorTester.motorTest(motors, 1, joyOperator, lcd);
-            System.out.println("Kicker Encoder 1 " + kickerEncoder1.get());
-            System.out.println("Kicker Encoder 2 " + kickerEncoder2.get());
-            System.out.println("Lifter Encoder " + lifterEncoder.get());
-            //           System.out.println("Left Drive Encoder " + leftDriveEncoder.get());
-            //           System.out.println("Right Drive Encoder " + rightDriveEncoder.get());
-            System.out.println("Lifter Optical     " + lifterOpticalSensor.get());
-            System.out.println("Kicker Optical     " + kickerOpticalSensor.get());
-
+            RobotMotorTester.motorTest();
+            RobotMotorTester.sensorTest();
         }
     }
 }

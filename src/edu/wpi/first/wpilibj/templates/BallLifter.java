@@ -21,7 +21,7 @@ public class BallLifter {
 
     static private Talon lifterMotor;
     static private Encoder lifterEncoder;
-    static private DigitalInput lifterOptical;
+    static private DigitalInput lifterOpticalSensor;
     static private Joystick joyOperator;
     static private Joystick joyLeft;
     static protected boolean isUp;
@@ -35,7 +35,7 @@ public class BallLifter {
         joyLeft = new Joystick(FRC2014.JOYSTICK_LEFT_USB);
         lifterMotor = FRC2014.talonLoader;
         lifterEncoder = FRC2014.lifterEncoder;
-        lifterOptical = FRC2014.lifterOpticalSensor;
+        lifterOpticalSensor = FRC2014.lifterOpticalSensor;
         isUp = true;
         isDown = false;
     }
@@ -54,7 +54,7 @@ public class BallLifter {
             multiplier = 1;
         }
         double motorSpeed;
-        if (lifterOptical.get() == false) {
+        if (lifterOpticalSensor.get() == false) {
             motorSpeed = -1.0 * multiplier;
         } else {
             motorSpeed = -0.8 * multiplier;
