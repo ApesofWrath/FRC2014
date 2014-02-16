@@ -40,7 +40,7 @@ public class RobotVision {
     static final double AXIS_M1013 = 49;		//Axis M1013
     static final double AXIS_M1011 = 37.4;              //Axis M1011
     static final double VIEW_ANGLE = AXIS_M1013;
-    static final double PI = 3.141592653;
+    static final double PI = 3.1415926535897932384626433832795028841971;
 
     //Score limits used for target identification
     static final int RECTANGULARITY_LIMIT = 35;
