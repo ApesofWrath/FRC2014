@@ -22,9 +22,9 @@ public class Kicker {
     static private Joystick joyRight;
     static private DigitalInput kickerOptSensor;
 
-    static private DriverStationLCD lcd;
+    protected static boolean isLoaded = false;
 
-    static boolean isCalibrated = false;
+    static private DriverStationLCD lcd;
 
     static boolean oldKickOptState = true;
     static boolean newKickOptState = oldKickOptState;
@@ -38,7 +38,7 @@ public class Kicker {
         kickerLeftMotor = FRC2014.talonKickerLeft;
         kickerRightMotor = FRC2014.talonKickerRight;
         kickerOptSensor = FRC2014.kickerOpticalSensor;
-      
+
     }
 
     public static boolean load() {
@@ -47,16 +47,14 @@ public class Kicker {
             lcd.updateLCD();
             kickerLeftMotor.set(0);
             kickerRightMotor.set(0);
+            isLoaded = true;
             return true;
         }
-        if (!isCalibrated) {
-            newKickOptState = kickerOptSensor.get();
-            if (oldKickOptState && !newKickOptState) {
-                resetEncoders();
-                isCalibrated = true;
-            }
-            oldKickOptState = newKickOptState;
+        newKickOptState = kickerOptSensor.get();
+        if (oldKickOptState && !newKickOptState) {
+            resetEncoders();
         }
+        oldKickOptState = newKickOptState;
         //double throttle = joyOperator.getThrottle();
         //throttle = (throttle/2.0)+0.5;
         //throttle = (throttle/-2.0)+0.5; //down == 0, up == 1
@@ -68,12 +66,13 @@ public class Kicker {
         return false;
     }
 
-    public static boolean kick() { 
+    public static boolean kick() {
         if (kickerLeftEncoder.get() >= FRC2014.KICKER_ENCODER_KICK_POSITION) {
             lcd.println(DriverStationLCD.Line.kUser6, 1, "finished moving                             ");
             lcd.updateLCD();
             kickerLeftMotor.set(0);
             kickerRightMotor.set(0);
+            isLoaded = false;
             return true;
         }
         //double throttle = joyOperator.getZ();

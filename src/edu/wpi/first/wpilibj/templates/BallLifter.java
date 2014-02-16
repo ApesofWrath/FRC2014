@@ -5,6 +5,7 @@
  */
 package edu.wpi.first.wpilibj.templates;
 
+import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DriverStationLCD;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Joystick;
@@ -20,6 +21,7 @@ public class BallLifter {
 
     static private Talon lifterMotor;
     static private Encoder lifterEncoder;
+    static private DigitalInput lifterOptical;
     static private Joystick joyOperator;
     static private Joystick joyLeft;
     static protected boolean isUp;
@@ -33,6 +35,7 @@ public class BallLifter {
         joyLeft = new Joystick(FRC2014.JOYSTICK_LEFT_USB);
         lifterMotor = FRC2014.talonLoader;
         lifterEncoder = FRC2014.lifterEncoder;
+        lifterOptical = FRC2014.lifterOpticalSensor;
         isUp = true;
         isDown = false;
     }
@@ -44,9 +47,19 @@ public class BallLifter {
             lifterMotor.set(0);
             return true;
         }
-        double throttle = joyLeft.getZ();
-        throttle = (throttle/-2.0)+0.5;
-        lifterMotor.set(joyLeft.getZ());
+        double multiplier;
+        if (lifterEncoder.get() >= FRC2014.LIFTER_ENCODER_SLOW_VALUE) {
+            multiplier = 0.75;
+        } else {
+            multiplier = 1;
+        }
+        double motorSpeed;
+        if (lifterOptical.get() == false) {
+            motorSpeed = -1.0 * multiplier;
+        } else {
+            motorSpeed = -0.8 * multiplier;
+        }
+        lifterMotor.set(motorSpeed);
         return false;
     }
 
@@ -57,9 +70,16 @@ public class BallLifter {
             lifterMotor.set(0);
             return true;
         }
-        double throttle = joyLeft.getZ();
-        throttle = (throttle/-2.0)+0.5;
-        lifterMotor.set(-1 * throttle);
+        lifterMotor.set(0.3);
         return false;
     }
+
+    /*public static boolean maintainMotors() {
+     if (isUp) {
+     int error = Math.abs(FRC2014.LIFTER_ENCODER_TOP_VALUE - )
+     lifterMotor.set();
+     } else {
+            
+     }
+     }*/
 }
