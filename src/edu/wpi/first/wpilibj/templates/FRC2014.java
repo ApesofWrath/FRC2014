@@ -19,13 +19,11 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  Document your changes in your git commit messages 
  View commit messages by right clicking in project folder and selecting git log.
  */
-
 //TODO:
 //maintenance of kicker and lifter positions
 //manual control for kicker and lifter
 //later: fix encoder reset
 //synchronize kicker motors
-
 public class FRC2014 extends SimpleRobot {
     // <editor-fold defaultstate="collapsed" desc="Variable Definitions">
 
@@ -111,6 +109,7 @@ public class FRC2014 extends SimpleRobot {
     static final int KICKER_KICKING = 2;
     static final int KICKER_NOT_MOVING = 3;
 
+    static final int WANTED_NUMBER_OF_HOT_PHOTOS = 2;
     //defining pneumatic objects
     private Compressor compress;
     private DoubleSolenoid shiftingSolenoid;
@@ -131,7 +130,8 @@ public class FRC2014 extends SimpleRobot {
     private int driveMode;
     private int lifterDirection = LIFTER_NOT_MOVING;
     private int kickerDirection = KICKER_NOT_MOVING;
-    protected static boolean isInManualControl = false;
+    private int numberOfHotPhotos = 0;
+    private boolean needsPhoto = true;
     //to check whether or not operator is using emergency manual control; used in state machine IDLE
 
     protected static Talon talonFrontLeft, talonFrontRight, talonBackLeft, talonBackRight,
@@ -223,7 +223,7 @@ public class FRC2014 extends SimpleRobot {
         kickerEncoder2.reset();
         lifterEncoder.reset();
         leftDriveEncoder.reset();
-  //      rightDriveEncoder.reset();
+        //      rightDriveEncoder.reset();
 
         kickerDirection = KICKER_NOT_MOVING;
         lifterDirection = LIFTER_NOT_MOVING;
@@ -239,35 +239,54 @@ public class FRC2014 extends SimpleRobot {
         RobotVision.ResultReport results;
 
         while (isAutonomous() && isEnabled()) {
-            results = RobotVision.cameraVision();
-            if (results == null) {
-                lcd.println(DriverStationLCD.Line.kUser2, 1, "failure                        ");
+            results = null;
+            if (needsPhoto) {
+                results = RobotVision.cameraVision();
+                if (results == null) {
+                    lcd.println(DriverStationLCD.Line.kUser2, 1, "failure                        ");
+                    lcd.updateLCD();
+                    continue;
+                }
+                lcd.println(DriverStationLCD.Line.kUser2, 1, "target is " + results.targetExists);
+                lcd.println(DriverStationLCD.Line.kUser3, 1, "hot : " + results.isHot);
+                lcd.println(DriverStationLCD.Line.kUser4, 1, "distance is " + results.distance);
                 lcd.updateLCD();
-                continue;
+
+                SmartDashboard.putBoolean("Target", results.targetExists);
+                SmartDashboard.putBoolean("Hot", results.isHot);
+                SmartDashboard.putNumber("Distance", results.distance);
             }
-            lcd.println(DriverStationLCD.Line.kUser2, 1, "target is " + results.targetExists);
-            lcd.println(DriverStationLCD.Line.kUser3, 1, "hot : " + results.isHot);
-            lcd.println(DriverStationLCD.Line.kUser4, 1, "distance is " + results.distance);
-            lcd.updateLCD();
+            if (results.isHot && needsPhoto) {
+                numberOfHotPhotos++;
+                //If we are taking photos and we get two or more hot photos, fire
+                if (numberOfHotPhotos >= WANTED_NUMBER_OF_HOT_PHOTOS) {
+                    needsPhoto = false;
+                    while (Kicker.load()) {
+                        //do nothing while the kicker is cocking
+                    }
+                    RobotVision.takePicture();
+                    while (Kicker.kick()) {
+                        //do nothing while kicker is kicking
+                    }
 
-            SmartDashboard.putBoolean("Target", results.targetExists);
-            SmartDashboard.putBoolean("Hot", results.isHot);
-            SmartDashboard.putNumber("Distance", results.distance);
-
-            if (results.isHot) {
-//                shoot();
-                RobotVision.takePicture();
-                while (BallLifter.moveUp()) {
-                    //do nothing while lifter is moving up
-                }
-//                moveForward();
+                    while (BallLifter.moveUp()) {
+                        //do nothing while lifter is moving up
+                    }
+                } //If we don't find a hot goal in 5 seconds, fire, becuase then the goal in front will be hot anyway
             } else if (autonomousTimer.get() > 5000) {
-//                shoot();
-                RobotVision.takePicture();
-                while (BallLifter.moveUp()) {
-                    //do nothing while lifter is moving up
-                }
-//                moveForward();
+                needsPhoto = false;
+                //shoot();
+                while (Kicker.load()) {
+                        //do nothing while the kicker is cocking
+                    }
+                    RobotVision.takePicture();
+                    while (Kicker.kick()) {
+                        //do nothing while kicker is kicking
+                    }
+
+                    while (BallLifter.moveUp()) {
+                        //do nothing while lifter is moving up
+                    }
             }
         }
     }
@@ -298,9 +317,9 @@ public class FRC2014 extends SimpleRobot {
             lcd.println(DriverStationLCD.Line.kUser5, 1, "" + joyOperator.getThrottle());
             lcd.updateLCD();
             System.out.println("Kicker Encoder 1 " + kickerEncoder1.get());
-                       System.out.println("Kicker Encoder 2 " + kickerEncoder2.get());
+            System.out.println("Kicker Encoder 2 " + kickerEncoder2.get());
             System.out.println("Lifter Encoder " + lifterEncoder.get());
- //           System.out.println("Left Drive Encoder " + leftDriveEncoder.get());
+            //           System.out.println("Left Drive Encoder " + leftDriveEncoder.get());
             //           System.out.println("Right Drive Encoder " + rightDriveEncoder.get());
             System.out.println("Lifter Optical     " + lifterOpticalSensor.get());
             System.out.println("Kicker Optical     " + kickerOpticalSensor.get());
@@ -446,10 +465,10 @@ public class FRC2014 extends SimpleRobot {
             }
 
             if (joyOperator.getRawButton(JOYSTICK_MANUAL_BUTTON)) {
-                
-             } else {
-                
-             }
+
+            } else {
+
+            }
         }
     }
 
@@ -491,7 +510,7 @@ public class FRC2014 extends SimpleRobot {
             System.out.println("Kicker Encoder 1 " + kickerEncoder1.get());
             System.out.println("Kicker Encoder 2 " + kickerEncoder2.get());
             System.out.println("Lifter Encoder " + lifterEncoder.get());
- //           System.out.println("Left Drive Encoder " + leftDriveEncoder.get());
+            //           System.out.println("Left Drive Encoder " + leftDriveEncoder.get());
             //           System.out.println("Right Drive Encoder " + rightDriveEncoder.get());
             System.out.println("Lifter Optical     " + lifterOpticalSensor.get());
             System.out.println("Kicker Optical     " + kickerOpticalSensor.get());
