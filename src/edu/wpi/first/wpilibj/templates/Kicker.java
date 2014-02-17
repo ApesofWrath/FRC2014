@@ -5,6 +5,7 @@ import edu.wpi.first.wpilibj.DriverStationLCD;
 import edu.wpi.first.wpilibj.Encoder;
 import edu.wpi.first.wpilibj.Joystick;
 import edu.wpi.first.wpilibj.Talon;
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
 
 /**
  *
@@ -26,9 +27,6 @@ public class Kicker {
 
     static private DriverStationLCD lcd;
 
-    static boolean oldKickOptState = true;
-    static boolean newKickOptState = oldKickOptState;
-
     static { //analogous to constructor
         lcd = DriverStationLCD.getInstance();
         joyOperator = new Joystick(FRC2014.JOYSTICK_OPERATOR_USB);
@@ -42,7 +40,8 @@ public class Kicker {
     }
 
     public static boolean load() {
-        if (kickerEncoderLeft.get() <= FRC2014.KICKER_ENCODER_TOP_POSITION) {
+        isLoaded = false;
+        if (kickerEncoderLeft.get() <= FRC2014.KICKER_ENCODER_TOP_POSITION && kickerEncoderLeft.get() >= FRC2014.KICKER_ENCODER_ERROR_POSITION) {
             lcd.println(DriverStationLCD.Line.kUser6, 1, "finished moving                             ");
             lcd.updateLCD();
             talonKickerLeft.set(0);
@@ -50,11 +49,6 @@ public class Kicker {
             isLoaded = true;
             return true;
         }
-        newKickOptState = kickerOpticalSensor.get();
-        if (oldKickOptState && !newKickOptState) {
-            resetEncoders();
-        }
-        oldKickOptState = newKickOptState;
         //double throttle = joyOperator.getThrottle();
         //throttle = (throttle/2.0)+0.5;
         //throttle = (throttle/-2.0)+0.5; //down == 0, up == 1
@@ -67,6 +61,7 @@ public class Kicker {
     }
 
     public static boolean kick() {
+        isLoaded = false;
         if (kickerEncoderLeft.get() >= FRC2014.KICKER_ENCODER_KICK_POSITION) {
             lcd.println(DriverStationLCD.Line.kUser6, 1, "finished moving                             ");
             lcd.updateLCD();
@@ -84,6 +79,32 @@ public class Kicker {
         lcd.println(DriverStationLCD.Line.kUser6, 1, "kicking                                       ");
         lcd.updateLCD();
         return false;
+    }
+
+    public static boolean maintainKicker() {
+        if (isLoaded) {
+            int kickerEncoderValue = kickerEncoderLeft.get();
+            int error = FRC2014.KICKER_ENCODER_TOP_POSITION - kickerEncoderValue;
+            double p = (joyOperator.getThrottle() / 4) + 0.25;
+            if (error < -15 || error > 15) {
+                p = 0;
+            }
+            double motorPower;
+            if (error > -3 || error < 3) {
+                motorPower = 0;
+            } else {
+                motorPower = p * error;
+            }
+            SmartDashboard.putNumber("Kicker P", p);
+            talonKickerLeft.set(motorPower);
+            talonKickerRight.set(-1 * motorPower);
+            if (error <= 1 && error >= -1) {
+                return true;
+            } else {
+                return false;
+            }
+        }
+        return true;
     }
 
     public static void resetEncoders() {
