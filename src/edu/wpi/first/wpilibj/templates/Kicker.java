@@ -110,6 +110,7 @@ public class Kicker {
 //            double p = (joyOperator.getThrottle() / 4) + 0.25;
             double p = FRC2014.P_KICKER;
             if (error < -60 || error > 60) {
+                isLoaded = false;
                 System.out.println("p is 0");
                 p = 0;
             }

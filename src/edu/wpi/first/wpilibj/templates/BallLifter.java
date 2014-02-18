@@ -56,15 +56,15 @@ public class BallLifter {
         }
         double multiplier;
         if (lifterEncoder.get() >= FRC2014.LIFTER_ENCODER_SLOW_VALUE) {
-            multiplier = 0.75;
+            multiplier = 0.8;
         } else {
             multiplier = 1;
         }
         double motorSpeed;
         if (lifterOpticalSensor.get() == false) {
-            motorSpeed = -0.9 * multiplier;
+            motorSpeed = -1.0 * multiplier;
         } else {
-            motorSpeed = -0.75 * multiplier;
+            motorSpeed = -0.95 * multiplier;
         }
 
         talonLoader.set(motorSpeed);

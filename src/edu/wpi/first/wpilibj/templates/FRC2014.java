@@ -116,7 +116,7 @@ public class FRC2014 extends SimpleRobot {
 
     //p-controller constants
     static final double P_LIFTER = 0.084; //should be 0.084;
-    static final double P_KICKER = 0.012; 
+    static final double P_KICKER = 0.012;
 
     //for autonomous
     static final int WANTED_NUMBER_OF_HOT_PHOTOS = 2;
@@ -244,7 +244,6 @@ public class FRC2014 extends SimpleRobot {
         RobotVision.ResultReport result = null;
 
         Threads.ImageCaptureRunnable icr = new Threads.ImageCaptureRunnable();
-        Threads.MoveLifterThread mlr = new Threads.MoveLifterThread();
         Thread t = new Thread(icr);
         t.start();
         boolean wasAlive = true;
@@ -458,7 +457,7 @@ public class FRC2014 extends SimpleRobot {
                 boolean isMaintaining = !BallLifter.maintainMotors();
                 SmartDashboard.putBoolean("Lifter maintaining", isMaintaining);
             }
-            
+
             newLiftOptState = lifterOpticalSensor.get();
             if (oldLiftOptState != newLiftOptState) {
                 BallLifter.resetEncoders();
@@ -491,19 +490,27 @@ public class FRC2014 extends SimpleRobot {
                 }
                 oldKickOptState = newKickOptState;
             } else if (kickerDirection == KICKER_KICKING) {
-                if (Kicker.kick()) {
-                    Kicker.stop();
+                if (Kicker.isLoaded) {
+                    if (Kicker.kick()) {
+                        Kicker.stop();
+                        kickerDirection = KICKER_NOT_MOVING;
+                    }
+                } else {
                     kickerDirection = KICKER_NOT_MOVING;
                 }
             } else if (kickerDirection == KICKER_PASSING) {
-                if (Kicker.pass()) {
-                    Kicker.stop();
+                if (!Kicker.isLoaded) {
+                    if (Kicker.pass()) {
+                        Kicker.stop();
+                        kickerDirection = KICKER_NOT_MOVING;
+                    }
+                } else {
                     kickerDirection = KICKER_NOT_MOVING;
                 }
             } else {
                 SmartDashboard.putBoolean("Maintaining Kicker", Kicker.maintainKicker());
             }
-            
+
             if (kickerEncoderLeft.getRate() > 0) { //it is kicking
                 newKickOptState = kickerOpticalSensor.get();
                 if (!oldKickOptState && newKickOptState) {
@@ -568,7 +575,7 @@ public class FRC2014 extends SimpleRobot {
             RobotMotorTester.sensorTest();
         }
     }
-    
+
     public void resetEverything() {
         kickerEncoderLeft.reset();
         kickerEncoderRight.reset();
