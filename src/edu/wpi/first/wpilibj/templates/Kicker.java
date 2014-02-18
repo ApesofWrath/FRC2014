@@ -22,6 +22,7 @@ public class Kicker {
     static private Joystick joyOperator;
     static private Joystick joyRight;
     static private DigitalInput kickerOpticalSensor;
+    static private int resetCount = 0;
 
     protected static boolean isLoaded = false;
 
@@ -80,22 +81,47 @@ public class Kicker {
         lcd.updateLCD();
         return false;
     }
+    
+    public static boolean pass() {
+        isLoaded = false;
+        if (kickerEncoderLeft.get() >= FRC2014.KICKER_ENCODER_KICK_POSITION) {
+            lcd.println(DriverStationLCD.Line.kUser6, 1, "finished moving                             ");
+            lcd.updateLCD();
+            talonKickerLeft.set(0);
+            talonKickerRight.set(0);
+            isLoaded = false;
+            return true;
+        }
+        //double throttle = joyOperator.getZ();
+        //throttle = (throttle/2.0)+0.5;
+        //throttle = (throttle/-2.0)+0.5;  // down == 0, up == 1
+        double throttle = 1.0;
+        talonKickerLeft.set(-1.0 * throttle);
+        talonKickerRight.set(throttle);
+        lcd.println(DriverStationLCD.Line.kUser6, 1, "kicking                                       ");
+        lcd.updateLCD();
+        return false;
+    }
 
     public static boolean maintainKicker() {
         if (isLoaded) {
             int kickerEncoderValue = kickerEncoderLeft.get();
             int error = FRC2014.KICKER_ENCODER_TOP_POSITION - kickerEncoderValue;
-            double p = (joyOperator.getThrottle() / 4) + 0.25;
-            if (error < -15 || error > 15) {
+//            double p = (joyOperator.getThrottle() / 4) + 0.25;
+            double p = FRC2014.P_KICKER;
+            if (error < -60 || error > 60) {
+                System.out.println("p is 0");
                 p = 0;
             }
             double motorPower;
-            if (error > -3 || error < 3) {
+            if (error > -3 && error < 3) {
+                System.out.println("motorPower is 0");
                 motorPower = 0;
             } else {
                 motorPower = p * error;
             }
             SmartDashboard.putNumber("Kicker P", p);
+            SmartDashboard.putNumber("Motor Kicker", motorPower);
             talonKickerLeft.set(motorPower);
             talonKickerRight.set(-1 * motorPower);
             if (error <= 1 && error >= -1) {
@@ -110,6 +136,9 @@ public class Kicker {
     public static void resetEncoders() {
         kickerEncoderLeft.reset();
         kickerEncoderRight.reset();
+        resetCount++;
+        FRC2014.lcd.println(DriverStationLCD.Line.kUser3, 1, "Resets "+resetCount);
+        FRC2014.lcd.updateLCD();
     }
 
     public static void stop() {

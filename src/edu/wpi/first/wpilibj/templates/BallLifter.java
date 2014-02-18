@@ -45,10 +45,10 @@ public class BallLifter {
     }
 
     public static boolean moveUp() {
-        isUp = false;
+        isUp = true;
         isDown = false;
 
-        if (lifterEncoder.get() >= FRC2014.LIFTER_ENCODER_TOP_VALUE) {
+        if (lifterLimitSwitch.get() == false) {
             talonLoader.set(0);
             isUp = true;
             isDown = false;
@@ -62,9 +62,9 @@ public class BallLifter {
         }
         double motorSpeed;
         if (lifterOpticalSensor.get() == false) {
-            motorSpeed = -1.0 * multiplier;
+            motorSpeed = -0.9 * multiplier;
         } else {
-            motorSpeed = -0.8 * multiplier;
+            motorSpeed = -0.75 * multiplier;
         }
 
         talonLoader.set(motorSpeed);
@@ -90,21 +90,30 @@ public class BallLifter {
         isCalibrated = true;
         System.out.println("Resetting");
     }
+    
+    public static void stopMotors() {
+        talonLoader.set(0);
+    }
 
     public static boolean maintainMotors() {
-        if (isUp && isCalibrated) {
-            int lifterEncoderValue = lifterEncoder.get();
-            int error = Math.abs(FRC2014.LIFTER_ENCODER_TOP_VALUE - lifterEncoderValue);
-            if (error <= 1) {
-                talonLoader.set(0);
-                return true;
-            }
-            double motorPower = -1 * FRC2014.P_LIFTER * error;
-            if (motorPower < -0.1 && lifterEncoder.getRate() == 0) { //stops lifter motor from smoking out
-                motorPower = 0;
-            }
-            talonLoader.set(motorPower);
+//        if (isUp && isCalibrated) {
+//            int lifterEncoderValue = lifterEncoder.get();
+//            int error = Math.abs(FRC2014.LIFTER_ENCODER_TOP_VALUE - lifterEncoderValue);
+//            if (error <= 1) {
+//                talonLoader.set(0);
+//                return true;
+//            }
+//            double motorPower = -1 * FRC2014.P_LIFTER * error;
+//            if (motorPower < -0.1 && lifterEncoder.getRate() == 0) { //stops lifter motor from smoking out
+//                motorPower = 0;
+//            }
+//            talonLoader.set(motorPower);
+//        }
+        if (lifterLimitSwitch.get() == true && isUp == true) {
+           return moveUp();
+        } else {
+            stopMotors();
+            return true;
         }
-        return true;
     }
 }
