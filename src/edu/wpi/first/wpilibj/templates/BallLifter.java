@@ -56,9 +56,9 @@ public class BallLifter {
         }
         double multiplier;
         if (lifterEncoder.get() >= FRC2014.LIFTER_ENCODER_SLOW_VALUE) {
-            multiplier = 0.8;
+            multiplier = 0.75;
         } else {
-            multiplier = 1;
+            multiplier = 0.95;
         }
         double motorSpeed;
         if (lifterOpticalSensor.get() == false) {
@@ -96,19 +96,6 @@ public class BallLifter {
     }
 
     public static boolean maintainMotors() {
-//        if (isUp && isCalibrated) {
-//            int lifterEncoderValue = lifterEncoder.get();
-//            int error = Math.abs(FRC2014.LIFTER_ENCODER_TOP_VALUE - lifterEncoderValue);
-//            if (error <= 1) {
-//                talonLoader.set(0);
-//                return true;
-//            }
-//            double motorPower = -1 * FRC2014.P_LIFTER * error;
-//            if (motorPower < -0.1 && lifterEncoder.getRate() == 0) { //stops lifter motor from smoking out
-//                motorPower = 0;
-//            }
-//            talonLoader.set(motorPower);
-//        }
         if (lifterLimitSwitch.get() == true && isUp == true) {
            return moveUp();
         } else {

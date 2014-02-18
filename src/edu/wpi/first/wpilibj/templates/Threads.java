@@ -1,5 +1,7 @@
 package edu.wpi.first.wpilibj.templates;
 
+import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
+
 public class Threads {
 
     public static class ImageCaptureRunnable implements Runnable {
@@ -11,6 +13,7 @@ public class Threads {
         }
 
         public void run() {
+            System.out.println("Camera vision");
             result = RobotVision.cameraVision();
         }
     }
@@ -21,10 +24,13 @@ public class Threads {
         boolean direction;
 
         public void run() {
+            System.out.println("Moving Lifter");
             if (direction == UP) {
-                BallLifter.moveUp();
+                while(!BallLifter.moveUp() && FRC2014.isAutonomous) { 
+                }
             } else {
-                BallLifter.moveDown();
+                while(!BallLifter.moveDown() && FRC2014.isAutonomous) {
+                }
             }
         }
 
@@ -38,14 +44,16 @@ public class Threads {
 
         public void run() {
             //Move Forward here
+            System.out.println("Moving Forward");
         }
     }
 
     public static class ShootThread extends Thread {
 
         public void run() {
-            while (Kicker.load());
-            while (Kicker.kick());
+            System.out.println("Kicking");
+            while (!Kicker.load() && FRC2014.isAutonomous);
+            while (!Kicker.kick() && FRC2014.isAutonomous);
         }
     }
 }

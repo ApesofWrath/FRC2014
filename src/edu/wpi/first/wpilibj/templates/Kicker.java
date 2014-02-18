@@ -81,10 +81,10 @@ public class Kicker {
         lcd.updateLCD();
         return false;
     }
-    
+
     public static boolean pass() {
         isLoaded = false;
-        if (kickerEncoderLeft.get() >= FRC2014.KICKER_ENCODER_KICK_POSITION) {
+        if (kickerEncoderLeft.get() >= FRC2014.KICKER_ENCODER_PASS_POSITION) {
             lcd.println(DriverStationLCD.Line.kUser6, 1, "finished moving                             ");
             lcd.updateLCD();
             talonKickerLeft.set(0);
@@ -95,10 +95,10 @@ public class Kicker {
         //double throttle = joyOperator.getZ();
         //throttle = (throttle/2.0)+0.5;
         //throttle = (throttle/-2.0)+0.5;  // down == 0, up == 1
-        double throttle = 1.0;
-        talonKickerLeft.set(-1.0 * throttle);
-        talonKickerRight.set(throttle);
-        lcd.println(DriverStationLCD.Line.kUser6, 1, "kicking                                       ");
+        double motorSpeed = 0.5;
+        talonKickerLeft.set(-1.0 * motorSpeed);
+        talonKickerRight.set(motorSpeed);
+        lcd.println(DriverStationLCD.Line.kUser6, 1, "passing                                       ");
         lcd.updateLCD();
         return false;
     }
@@ -130,15 +130,17 @@ public class Kicker {
             } else {
                 return false;
             }
+        } else {
+            stop();
+            return true;
         }
-        return true;
     }
 
     public static void resetEncoders() {
         kickerEncoderLeft.reset();
-        kickerEncoderRight.reset();
+//        kickerEncoderRight.reset();
         resetCount++;
-        FRC2014.lcd.println(DriverStationLCD.Line.kUser3, 1, "Resets "+resetCount);
+        FRC2014.lcd.println(DriverStationLCD.Line.kUser3, 1, "Resets " + resetCount);
         FRC2014.lcd.updateLCD();
     }
 
@@ -147,5 +149,18 @@ public class Kicker {
         lcd.updateLCD();
         talonKickerLeft.set(0);
         talonKickerRight.set(0);
+    }
+
+    public static boolean unload() {
+        isLoaded = false;
+        if (kickerEncoderLeft.get() >= FRC2014.KICKER_ENCODER_REST_POSITION) {
+            talonKickerLeft.set(0);
+            talonKickerRight.set(0);
+            return true;
+        }
+        double motorSpeed = 0.3;
+        talonKickerLeft.set(-1.0 * motorSpeed);
+        talonKickerRight.set(motorSpeed);
+        return false;
     }
 }
