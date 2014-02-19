@@ -294,7 +294,7 @@ public class FRC2014 extends SimpleRobot {
         while (!Kicker.load() && isAutonomous() && isEnabled());
 
         //Run this while loop until a hot target is found or 5 seconds has passed
-        while (takingPhoto && autonomousTimer.get() > 5 && isAutonomous() && isEnabled()) {
+        while (takingPhoto && autonomousTimer.get() <= 5 && isAutonomous() && isEnabled()) {
             result = icr.getResult();
             if (result == null) {
                 //Image Processing isn't done yet, so give it time to complete
