@@ -87,8 +87,8 @@ public class FRC2014 extends SimpleRobot {
     static final int JOYSTICK_UNLOAD_BUTTON = 6;
     static final int JOYSTICK_MANUAL_BUTTON = 7; //for operator joystick
     static final int JOYSTICK_RESET_ENCODERS_BUTTON = 8; // The button in Test to power the Kicker Motors properly
-    static final int JOYSTICK_TEST_KICKER_BUTTON = 9; // The button in Test to power the Kicker Motors properly
 //    static final int SET_SAMPLE_RATE_BUTTON = 10; //for operator joystick
+    static final int JOYSTICK_TEST_KICKER_BUTTON = 11; // The button in Test to power the Kicker Motors properly
     static final int JOYSTICK_PASS_BUTTON = 11; //for operator joystick
     static final int JOYSTICK_TAKE_PICTURE_BUTTON = 12; //for operator joystick
 
@@ -96,7 +96,7 @@ public class FRC2014 extends SimpleRobot {
     static final int KICKER_ENCODER_TOP_POSITION = -170; // -162, -140 moves to "12:00", top is now -171
     static final int KICKER_ENCODER_ERROR_POSITION = -200; //if cocked without a ball
     static final int KICKER_ENCODER_KICK_POSITION = 160;
-    static final int KICKER_ENCODER_REST_POSITION = 0;
+    static final int KICKER_ENCODER_REST_POSITION = -10;
     static final int KICKER_ENCODER_PASS_POSITION = 40;
     static final int LIFTER_ENCODER_TOP_VALUE = 12; //13
     static final int LIFTER_ENCODER_AUTO_KICKER_VALUE = 0; //when kicker loads while lifter is going auto
@@ -128,7 +128,7 @@ public class FRC2014 extends SimpleRobot {
     private DoubleSolenoid shiftingSolenoid;
 
     //defining others
-    private RobotDrive driver;
+    protected static RobotDrive driver;
     protected static DriverStationLCD lcd;
     private DriverStation ds;
     private DriverStation.Alliance ally;
@@ -218,11 +218,15 @@ public class FRC2014 extends SimpleRobot {
 
     public void robotInit() { //use this method for setup of any kind
 
-        SmartDashboard.putBoolean("Camera Initialized", false);
-        System.out.println("Attempting to initialize Camera.");
-        double time = RobotVision.initializeCamera();
-        System.out.println("Initialization completed in " + time + " seconds");
-        SmartDashboard.putBoolean("Camera Initialized", (time < 0));
+        new Thread(new Runnable() {
+            public void run() {
+                SmartDashboard.putBoolean("Camera Initialized", false);
+                System.out.println("Attempting to initialize Camera.");
+                double time = RobotVision.initializeCamera();
+                System.out.println("Initialization completed in " + time + " seconds");
+                SmartDashboard.putBoolean("Camera Initialized", (time < 0));
+            }
+        }).start();
 
         driver.setInvertedMotor(RobotDrive.MotorType.kFrontLeft, true);
         driver.setInvertedMotor(RobotDrive.MotorType.kRearLeft, true);
@@ -240,19 +244,20 @@ public class FRC2014 extends SimpleRobot {
 
         SmartDashboard.putString("Version Number", VERSION_NUMBER);
 
-        cameraLeftRightServo.set(.5);
-        cameraUpDownServo.set(.5);
+        cameraLeftRightServo.set(1);
+        cameraUpDownServo.set(1);
     }
 
     /**
      * This function is called once each time the robot enters autonomous mode.
      */
     public void autonomous() {
+        shiftingSolenoid.set(DoubleSolenoid.Value.kReverse);
         isAutonomous = true;
         lcd.println(DriverStationLCD.Line.kUser1, 1, "autonomous v" + VERSION_NUMBER);
         lcd.updateLCD();
-        cameraLeftRightServo.set(SmartDashboard.getNumber("Left Right Camera", .5));
-        cameraUpDownServo.set(SmartDashboard.getNumber("Up Down Camera", .5));
+        cameraLeftRightServo.set(SmartDashboard.getNumber("Left Right Camera", 1));
+        cameraUpDownServo.set(SmartDashboard.getNumber("Up Down Camera", 1));
         driver.setSafetyEnabled(false);
 
         resetEverything();
@@ -270,7 +275,6 @@ public class FRC2014 extends SimpleRobot {
         int numberOfHotPhotos = 0;
 
         // Move the arm down
-        new Threads.MoveLifterThread().start(Threads.MoveLifterThread.DOWN);
 
         Thread pictureThread = new Thread(new Runnable() {
             public void run() {
@@ -279,6 +283,8 @@ public class FRC2014 extends SimpleRobot {
         });
 
         new Threads.MoveForwardThread().start();
+        Timer.delay(1500);
+        new Threads.MoveLifterThread().start(Threads.MoveLifterThread.DOWN);
 
         while (isAutonomous() && isEnabled()) {
 				// Put code here that will always run
@@ -322,8 +328,8 @@ public class FRC2014 extends SimpleRobot {
                     pictureThread.start();
                     // move the arm up
                     new Threads.MoveLifterThread().start(Threads.MoveLifterThread.UP);
-                    new Threads.MoveForwardThread().start();
-                } else if (autonomousTimer.get() > 5000/*ms*/) {
+//                    new Threads.MoveForwardThread().start();
+                } else if (autonomousTimer.get() > 5/*second*/) {
                     if (BallLifter.isDown) {
                         alreadyKicked = true;
                     } else {
@@ -332,7 +338,7 @@ public class FRC2014 extends SimpleRobot {
                     pictureThread.start();
                     // move the arm up 
                     new Threads.MoveLifterThread().start(Threads.MoveLifterThread.UP);
-                    new Threads.MoveForwardThread().start();
+//                    new Threads.MoveForwardThread().start();
                 }
             }
         }
@@ -404,10 +410,10 @@ public class FRC2014 extends SimpleRobot {
             //</editor-fold> 
             //<editor-fold defaultstate="collapsed" desc="Solenoid Shifter">
             if (joyLeft.getRawButton(JOYSTICK_HIGH_SHIFT_BUTTON) || joyRight.getRawButton(JOYSTICK_HIGH_SHIFT_BUTTON)) {
-                shiftingSolenoid.set(DoubleSolenoid.Value.kReverse);
+                shiftingSolenoid.set(DoubleSolenoid.Value.kForward);
                 SmartDashboard.putString("Shifter Solenoid", "High Gear");
             } else if (joyLeft.getRawButton(JOYSTICK_LOW_SHIFT_BUTTON) || joyRight.getRawButton(JOYSTICK_LOW_SHIFT_BUTTON)) {
-                shiftingSolenoid.set(DoubleSolenoid.Value.kForward);
+                shiftingSolenoid.set(DoubleSolenoid.Value.kReverse);
                 SmartDashboard.putString("Shifter Solenoid", "Low Gear");
             }
 

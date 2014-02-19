@@ -158,7 +158,7 @@ public class Kicker {
             talonKickerRight.set(0);
             return true;
         }
-        double motorSpeed = 0.3;
+        double motorSpeed = 0.2;
         talonKickerLeft.set(-1.0 * motorSpeed);
         talonKickerRight.set(motorSpeed);
         return false;
