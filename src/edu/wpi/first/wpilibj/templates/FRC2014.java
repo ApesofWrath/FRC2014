@@ -252,12 +252,17 @@ public class FRC2014 extends SimpleRobot {
      * This function is called once each time the robot enters autonomous mode.
      */
     public void autonomous() {
+        //This may cause problems becase we try to move before shifted
         shiftingSolenoid.set(DoubleSolenoid.Value.kReverse);
+        Timer.delay(0.1);
+
         isAutonomous = true;
         lcd.println(DriverStationLCD.Line.kUser1, 1, "autonomous v" + VERSION_NUMBER);
         lcd.updateLCD();
+        //Sets the camera to look at the target. I think these values are still incorect
         cameraLeftRightServo.set(SmartDashboard.getNumber("Left Right Camera", 1));
         cameraUpDownServo.set(SmartDashboard.getNumber("Up Down Camera", 1));
+        //Kill the watchdog
         driver.setSafetyEnabled(false);
 
         resetEverything();
@@ -265,44 +270,38 @@ public class FRC2014 extends SimpleRobot {
         Timer autonomousTimer = new Timer();
         autonomousTimer.start();
 
+        boolean takingPhoto = true;
+
         RobotVision.ResultReport result = null;
 
         Threads.ImageCaptureRunnable icr = new Threads.ImageCaptureRunnable();
         Thread t = new Thread(icr);
         t.start();
-        boolean wasAlive = true;
-        boolean alreadyKicked = false;
-        int numberOfHotPhotos = 0;
 
-        // Move the arm down
+        //Lower Lifter
+        while (!BallLifter.moveDown() && isAutonomous() && isEnabled());
 
-        Thread pictureThread = new Thread(new Runnable() {
-            public void run() {
-                RobotVision.takePicture();
-            }
-        });
+        //Drive Forward
+        Timer driveForwardTimer = new Timer();
+        driveForwardTimer.start();
+        while (driveForwardTimer.get() <= 1.5 && isAutonomous() && isEnabled()) {
+            //Turn value needs to be tuned: 0 is too little and 0.05 is too much
+            FRC2014.driver.drive(-1.0, 0.01);
+        }
+        FRC2014.driver.drive(0.0, 0.0);
 
-        new Threads.MoveForwardThread().start();
-        Timer.delay(1500);
-        new Threads.MoveLifterThread().start(Threads.MoveLifterThread.DOWN);
+        //Load the kicker before running image processing
+        while (!Kicker.load() && isAutonomous() && isEnabled());
 
-        while (isAutonomous() && isEnabled()) {
-				// Put code here that will always run
-
-            // if the thread hasn't quit yet, then keep looping
-            if (t.isAlive()) {
-                wasAlive = true;
-                continue;
-            }
-            if (!t.isAlive() && wasAlive) // Thread is dead, do post-processing
-            {
-                result = icr.getResult();
-
-                if (result == null) {
-                    lcd.println(DriverStationLCD.Line.kUser2, 1, "failure                        ");
-                    lcd.updateLCD();
-                    continue;
-                }
+        //Run this while loop until a hot target is found or 5 seconds has passed
+        while (takingPhoto && autonomousTimer.get() > 5 && isAutonomous() && isEnabled()) {
+            result = icr.getResult();
+            if (result == null) {
+                //Image Processing isn't done yet, so give it time to complete
+                lcd.println(DriverStationLCD.Line.kUser2, 1, "Image Processing Still Running          ");
+                lcd.updateLCD();
+            } else {
+                //Print out information about vision processing
                 lcd.println(DriverStationLCD.Line.kUser2, 1, "target is " + result.targetExists);
                 lcd.println(DriverStationLCD.Line.kUser3, 1, "hot : " + result.isHot);
                 lcd.println(DriverStationLCD.Line.kUser4, 1, "distance is " + result.distance);
@@ -311,40 +310,15 @@ public class FRC2014 extends SimpleRobot {
                 SmartDashboard.putBoolean("Target", result.targetExists);
                 SmartDashboard.putBoolean("Hot", result.isHot);
                 SmartDashboard.putNumber("Distance", result.distance);
-            }
 
-            if (!alreadyKicked) {
-                if (result != null && result.isHot) {
-                    numberOfHotPhotos++;
-                    if (numberOfHotPhotos >= WANTED_NUMBER_OF_HOT_PHOTOS) {
-                        if (BallLifter.isDown) {
-                            new Threads.ShootThread().start();
-                            alreadyKicked = true;
-                        } else {
-                            continue;
-                        }
-                    }
-
-                    pictureThread.start();
-                    // move the arm up
-                    new Threads.MoveLifterThread().start(Threads.MoveLifterThread.UP);
-//                    new Threads.MoveForwardThread().start();
-                } else if (autonomousTimer.get() > 5/*second*/) {
-                    if (BallLifter.isDown) {
-                        alreadyKicked = true;
-                    } else {
-                        continue;
-                    }
-                    pictureThread.start();
-                    // move the arm up 
-                    new Threads.MoveLifterThread().start(Threads.MoveLifterThread.UP);
-//                    new Threads.MoveForwardThread().start();
+                if (result.isHot) {
+                    takingPhoto = false;
                 }
             }
+            while (!Kicker.kick() && isAutonomous() && isEnabled());
         }
-        isAutonomous = false;
-        Kicker.stop();
-        BallLifter.stopMotors();
+
+        //Kick because a hot target has been found or 5 seconds have passed
     }
 
     /**
