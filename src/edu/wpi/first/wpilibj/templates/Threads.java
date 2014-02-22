@@ -1,8 +1,5 @@
 package edu.wpi.first.wpilibj.templates;
 
-import edu.wpi.first.wpilibj.Timer;
-import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
-
 public class Threads {
 
     public static class ImageCaptureRunnable implements Runnable {
@@ -19,7 +16,7 @@ public class Threads {
         }
     }
 
-    public static class MoveLifterThread extends Thread {
+/*    public static class MoveLifterThread extends Thread {
 
         public final static boolean UP = true, DOWN = false;
         boolean direction;
@@ -38,8 +35,8 @@ public class Threads {
             start();
         }
     }
-
-    public static class MoveForwardThread extends Thread {
+*/
+/*    public static class MoveForwardThread extends Thread {
 
         public void run() {
             //Move Forward here
@@ -52,8 +49,8 @@ public class Threads {
             FRC2014.driver.drive(0.0, 0.0);
         }
     }
-
-    public static class ShootThread extends Thread {
+*/
+/*    public static class ShootThread extends Thread {
 
         public void run() {
             System.out.println("Kicking");
@@ -61,4 +58,5 @@ public class Threads {
             while (!Kicker.kick() && FRC2014.isAutonomous);
         }
     }
+*/
 }

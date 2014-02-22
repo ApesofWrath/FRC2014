@@ -254,9 +254,16 @@ public class FRC2014 extends SimpleRobot {
     public void autonomous() {
         //This may cause problems becase we try to move before shifted
         shiftingSolenoid.set(DoubleSolenoid.Value.kReverse);
-        Timer.delay(0.1);
+        // I know that this delay is short, but we shouldn't get in the practise of delaying
+        // the main thread without it being able to escape when it is no longer enabled or
+        // in autonomous
+        //Timer.delay(0.1);
+        Timer d = new Timer();
+        d.start();
+        while (d.get() <= .1 && isAutonomous() && isEnabled());
 
-        isAutonomous = true;
+        // do we need this any more?
+        //isAutonomous = true;
         lcd.println(DriverStationLCD.Line.kUser1, 1, "autonomous v" + VERSION_NUMBER);
         lcd.updateLCD();
         //Sets the camera to look at the target. I think these values are still incorect
@@ -274,6 +281,7 @@ public class FRC2014 extends SimpleRobot {
 
         RobotVision.ResultReport result = null;
 
+        // create a Runnable so that the objects will be accessible accross many threads
         Threads.ImageCaptureRunnable icr = new Threads.ImageCaptureRunnable();
         Thread t = new Thread(icr);
         t.start();
@@ -296,11 +304,12 @@ public class FRC2014 extends SimpleRobot {
         //Run this while loop until a hot target is found or 5 seconds has passed
         while (takingPhoto && autonomousTimer.get() <= 5 && isAutonomous() && isEnabled()) {
             result = icr.getResult();
-            if (result == null) {
+            if (result == null || t.isAlive()) {
                 //Image Processing isn't done yet, so give it time to complete
                 lcd.println(DriverStationLCD.Line.kUser2, 1, "Image Processing Still Running          ");
                 lcd.updateLCD();
             } else {
+
                 //Print out information about vision processing
                 lcd.println(DriverStationLCD.Line.kUser2, 1, "target is " + result.targetExists);
                 lcd.println(DriverStationLCD.Line.kUser3, 1, "hot : " + result.isHot);
@@ -313,6 +322,16 @@ public class FRC2014 extends SimpleRobot {
 
                 if (result.isHot) {
                     takingPhoto = false;
+                    // save the picture, but if it is less than 2 seconds from Teleop, don't since we aren't threading it.
+                    if (autonomousTimer.get() < 9) {
+                        RobotVision.takePicture();
+                    }
+                }
+                // Should we be taking multiple pictures?
+                // Even though we probably don't, maybe the first picture will be a false-positive or negative.
+                if (!t.isAlive() && takingPhoto) {
+                    t = new Thread(icr);
+                    t.start();
                 }
             }
             while (!Kicker.kick() && isAutonomous() && isEnabled());
