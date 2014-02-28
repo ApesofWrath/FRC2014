@@ -121,6 +121,11 @@ public class FRC2014 extends SimpleRobot {
     static final double P_LIFTER = 0.084; //should be 0.084;
     static final double P_KICKER = 0.012;
 
+    static final double autonDriveTime = 1.5; // drive this duration in Auton
+    static final double kickerAbortTime = 1.0; // seconds
+    static final double takingPhotoTime = 5.0; // seconds
+    static final double lowerAbortTime = 0.75; // seconds
+
     //for autonomous
     static final int WANTED_NUMBER_OF_HOT_PHOTOS = 2;
     //defining pneumatic objects
@@ -217,16 +222,13 @@ public class FRC2014 extends SimpleRobot {
     }
 
     public void robotInit() { //use this method for setup of any kind
-
-        new Thread(new Runnable() {
-            public void run() {
-                SmartDashboard.putBoolean("Camera Initialized", false);
-                System.out.println("Attempting to initialize Camera.");
-                double time = RobotVision.initializeCamera();
-                System.out.println("Initialization completed in " + time + " seconds");
-                SmartDashboard.putBoolean("Camera Initialized", (time < 0));
-            }
-        }).start();
+        driver.setSafetyEnabled(false);
+        //removed camera initialization thread because it hung
+        SmartDashboard.putBoolean("Camera Initialized", false);
+        System.out.println("Attempting to initialize Camera.");
+        double time = RobotVision.initializeCamera();
+        System.out.println("Initialization completed in " + time + " seconds");
+        SmartDashboard.putBoolean("Camera Initialized", (time < 0));
 
         driver.setInvertedMotor(RobotDrive.MotorType.kFrontLeft, true);
         driver.setInvertedMotor(RobotDrive.MotorType.kRearLeft, true);
@@ -253,14 +255,16 @@ public class FRC2014 extends SimpleRobot {
      */
     public void autonomous() {
         //This may cause problems becase we try to move before shifted
-        shiftingSolenoid.set(DoubleSolenoid.Value.kReverse);
-        // I know that this delay is short, but we shouldn't get in the practise of delaying
+//        shiftingSolenoid.set(DoubleSolenoid.Value.kReverse);
+        //Responsibility of the pit crew to set the shifter position(gear) as per Mr. Weissman 2/27
+        // I know that this delay is short, but we shouldn't get in the practice (object of preposition -> noun -> practice)
+        // of delaying
         // the main thread without it being able to escape when it is no longer enabled or
         // in autonomous
         //Timer.delay(0.1);
-        Timer d = new Timer();
-        d.start();
-        while (d.get() <= .1 && isAutonomous() && isEnabled());
+//        Timer d = new Timer();
+//        d.start();
+//        while (d.get() <= .1 && isAutonomous() && isEnabled());
 
         // do we need this any more?
         //isAutonomous = true;
@@ -282,34 +286,60 @@ public class FRC2014 extends SimpleRobot {
         RobotVision.ResultReport result = null;
 
         // create a Runnable so that the objects will be accessible accross many threads
+        System.out.println("Starting image capture thread");
         Threads.ImageCaptureRunnable icr = new Threads.ImageCaptureRunnable();
         Thread t = new Thread(icr);
         t.start();
 
         //Lower Lifter
-        while (!BallLifter.moveDown() && isAutonomous() && isEnabled());
+        System.out.println("Lowering lifter");
+
+        double lowerStartTime = autonomousTimer.get();
+        
+        // lower the loader until it hits the ground or runs out of time
+        while ((autonomousTimer.get() - lowerStartTime) < lowerAbortTime
+                && !BallLifter.moveDown()
+                && isAutonomous()
+                && isEnabled());
 
         //Drive Forward
+        System.out.println("Driving forward");
         Timer driveForwardTimer = new Timer();
         driveForwardTimer.start();
-        while (driveForwardTimer.get() <= 1.5 && isAutonomous() && isEnabled()) {
+
+        while ((driveForwardTimer.get() <= autonDriveTime)
+                && isAutonomous()
+                && isEnabled()) {
             //Turn value needs to be tuned: 0 is too little and 0.05 is too much
             FRC2014.driver.drive(-1.0, 0.01);
         }
         FRC2014.driver.drive(0.0, 0.0);
 
         //Load the kicker before running image processing
-        while (!Kicker.load() && isAutonomous() && isEnabled());
+        System.out.println("Loading kicker");
+
+        double kickerStartTime = autonomousTimer.get();
+
+        // kick or wait a fixed time if something is broken
+        while ((autonomousTimer.get() - kickerStartTime) < kickerAbortTime
+                && !Kicker.load()
+                && isAutonomous()
+                && isEnabled());
 
         //Run this while loop until a hot target is found or 5 seconds has passed
-        while (takingPhoto && autonomousTimer.get() <= 5 && isAutonomous() && isEnabled()) {
+        while (autonomousTimer.get() <= takingPhotoTime
+                && takingPhoto
+                && isAutonomous()
+                && isEnabled()) {
+
             result = icr.getResult();
             if (result == null || t.isAlive()) {
+                System.out.println("Result Null or thread still running");
                 //Image Processing isn't done yet, so give it time to complete
                 lcd.println(DriverStationLCD.Line.kUser2, 1, "Image Processing Still Running          ");
                 lcd.updateLCD();
             } else {
-
+                System.out.println("Result not Null.  Processing...");
                 //Print out information about vision processing
                 lcd.println(DriverStationLCD.Line.kUser2, 1, "target is " + result.targetExists);
                 lcd.println(DriverStationLCD.Line.kUser3, 1, "hot : " + result.isHot);
@@ -321,19 +351,26 @@ public class FRC2014 extends SimpleRobot {
                 SmartDashboard.putNumber("Distance", result.distance);
 
                 if (result.isHot) {
+                    System.out.println("Is hot");
                     takingPhoto = false;
                     // save the picture, but if it is less than 2 seconds from Teleop, don't since we aren't threading it.
                     if (autonomousTimer.get() < 9) {
+                        System.out.println("Taking picture");
                         RobotVision.takePicture();
+                        System.out.println("Picture taken");
                     }
                 }
                 // Should we be taking multiple pictures?
-                // Even though we probably don't, maybe the first picture will be a false-positive or negative.
+                // Even though we probably don't, the first picture might be a false-negative.
                 if (!t.isAlive() && takingPhoto) {
+                    System.out.println("Starting new Image Capture Thread.");
                     t = new Thread(icr);
                     t.start();
                 }
             }
+            
+            System.out.println("Kicking");
+            // We don't need a timer here since it is at the end and it exits when we leave autonomous
             while (!Kicker.kick() && isAutonomous() && isEnabled());
         }
 

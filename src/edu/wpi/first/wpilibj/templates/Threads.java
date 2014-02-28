@@ -13,6 +13,7 @@ public class Threads {
         public void run() {
             System.out.println("Camera vision");
             result = RobotVision.cameraVision();
+            System.out.println("Camera vision done");
         }
     }
 
