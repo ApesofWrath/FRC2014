@@ -116,7 +116,7 @@ public class RobotVision {
                 if (camera.freshImage()) {
                     image = camera.getImage();
                     if (image != null) {
-                        t.stop();
+//                        t.stop();
                         return t.get();
                     }
                 }
