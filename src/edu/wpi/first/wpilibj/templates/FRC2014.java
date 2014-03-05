@@ -271,6 +271,7 @@ public class FRC2014 extends SimpleRobot {
         lcd.println(DriverStationLCD.Line.kUser1, 1, "autonomous v" + VERSION_NUMBER);
         lcd.updateLCD();
         //Sets the camera to look at the target. I think these values are still incorect
+        
         cameraLeftRightServo.set(SmartDashboard.getNumber("Left Right Camera", 1));
         cameraUpDownServo.set(SmartDashboard.getNumber("Up Down Camera", 1));
         //Kill the watchdog
@@ -311,7 +312,7 @@ public class FRC2014 extends SimpleRobot {
                 && isAutonomous()
                 && isEnabled()) {
             //Turn value needs to be tuned: 0 is too little and 0.05 is too much
-            FRC2014.driver.drive(-1.0, 0.01);
+            FRC2014.driver.drive(-1.0, SmartDashboard.getNumber("Autonomous Turn Radius", 0.01));
         }
         FRC2014.driver.drive(0.0, 0.0);
 
