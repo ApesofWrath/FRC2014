@@ -225,6 +225,9 @@ public class FRC2014 extends SimpleRobot {
         driver.setSafetyEnabled(false);
         //removed camera initialization thread because it hung
         SmartDashboard.putBoolean("Camera Initialized", false);
+        SmartDashboard.putNumber("Autonomous Turn Radius", 0.01);
+        SmartDashboard.putNumber("Lifter Slowdown Threshold", LIFTER_ENCODER_SLOW_VALUE);
+        SmartDashboard.putNumber("Lifter Slowdown Multiplyer", 0.75);
         System.out.println("Attempting to initialize Camera.");
         double time = RobotVision.initializeCamera();
         System.out.println("Initialization completed in " + time + " seconds");

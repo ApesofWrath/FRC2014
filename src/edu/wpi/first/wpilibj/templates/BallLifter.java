@@ -55,15 +55,18 @@ public class BallLifter {
             return true;
         }
         double multiplier;
-        if (lifterEncoder.get() >= FRC2014.LIFTER_ENCODER_SLOW_VALUE) {
-            multiplier = 0.75;
+        //Used to change the speed of the motor based on if has passes
+        if (lifterEncoder.get() >= SmartDashboard.getNumber("Lifter Slowdown Threshold", FRC2014.LIFTER_ENCODER_SLOW_VALUE)) {
+            multiplier = SmartDashboard.getNumber("Lifter Slowdown Multiplyer", 0.75);
         } else {
-            multiplier = 0.95;
+            multiplier = 1.00;
         }
         double motorSpeed;
+        
+        //Ball in lifter
         if (lifterOpticalSensor.get() == false) {
             motorSpeed = -1.0 * multiplier;
-        } else {
+        } else { //Ball not in lifter
             motorSpeed = -0.95 * multiplier;
         }
 
