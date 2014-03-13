@@ -26,8 +26,8 @@ public class BallLifter {
     static private DigitalInput lifterLimitSwitch;
     static private Joystick joyOperator;
     static private Joystick joyLeft;
-    static protected boolean isUp;
-    static protected boolean isDown;
+    static public boolean isUp;
+    static public boolean isDown;
     static protected boolean isCalibrated = false;
 
     static private DriverStationLCD lcd;
@@ -56,20 +56,21 @@ public class BallLifter {
         }
         double multiplier;
         //Used to change the speed of the motor based on if has passes
-        if (lifterEncoder.get() >= SmartDashboard.getNumber("Lifter Slowdown Threshold", FRC2014.LIFTER_ENCODER_SLOW_VALUE)) {
-            multiplier = SmartDashboard.getNumber("Lifter Slowdown Multiplyer", 0.75);
+        /*if (lifterEncoder.get() >= SmartDashboard.getNumber("Lifter Slowdown Threshold", FRC2014.LIFTER_ENCODER_SLOW_VALUE)) {
+            multiplier = SmartDashboard.getNumber("Lifter Slowdown Multiplier", 0.95);
         } else {
             multiplier = 1.00;
         }
         double motorSpeed;
         
         //Ball in lifter
-        if (lifterOpticalSensor.get() == false) {
+        /*if (lifterOpticalSensor.get() == false) {
             motorSpeed = -1.0 * multiplier;
         } else { //Ball not in lifter
             motorSpeed = -0.95 * multiplier;
         }
-
+        motorSpeed = -1 * multiplier;*/
+        double motorSpeed = -1;
         talonLoader.set(motorSpeed);
         return false;
 
@@ -84,7 +85,7 @@ public class BallLifter {
             isDown = true;
             return true;
         }
-        talonLoader.set(0.3);
+        talonLoader.set(0.5);
         return false;
     }
 

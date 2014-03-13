@@ -97,11 +97,11 @@ public class FRC2014 extends SimpleRobot {
     static final int KICKER_ENCODER_ERROR_POSITION = -200; //if cocked without a ball
     static final int KICKER_ENCODER_KICK_POSITION = 160;
     static final int KICKER_ENCODER_REST_POSITION = -10;
-    static final int KICKER_ENCODER_PASS_POSITION = 40;
+    static final int KICKER_ENCODER_PASS_POSITION = 55;//40;
     static final int LIFTER_ENCODER_TOP_VALUE = 12; //13
     static final int LIFTER_ENCODER_AUTO_KICKER_VALUE = 0; //when kicker loads while lifter is going auto
     static final int LIFTER_ENCODER_SLOW_VALUE = 0; //slow lifter as it approaches up
-    static final int LIFTER_ENCODER_BOTTOM_VALUE = -56; //-58
+    static final int LIFTER_ENCODER_BOTTOM_VALUE = -50; //-58
 
     //defining speeds
     static final double CAMERA_SERVO_SPEED = 0.006;
@@ -142,7 +142,7 @@ public class FRC2014 extends SimpleRobot {
     private Joystick joyOperator;
     protected static Encoder kickerEncoderLeft, kickerEncoderRight, lifterEncoder, rightDriveEncoder, leftDriveEncoder;
     private Servo cameraUpDownServo, cameraLeftRightServo;
-    static final String VERSION_NUMBER = "0.2.4";
+    static final String VERSION_NUMBER = "1.0.0";
     protected static DigitalInput kickerOpticalSensor, lifterOpticalSensor;
     //kickerOpticalSensor normally false, lifterOpticalSensor normally true, lifterLimitSwitch normally true
     // private KickerStateMachine kickerStates;
@@ -227,7 +227,7 @@ public class FRC2014 extends SimpleRobot {
         SmartDashboard.putBoolean("Camera Initialized", false);
         SmartDashboard.putNumber("Autonomous Turn Radius", 0.01);
         SmartDashboard.putNumber("Lifter Slowdown Threshold", LIFTER_ENCODER_SLOW_VALUE);
-        SmartDashboard.putNumber("Lifter Slowdown Multiplyer", 0.75);
+        SmartDashboard.putNumber("Lifter Slowdown Multiplier", 0.75);
         System.out.println("Attempting to initialize Camera.");
         double time = RobotVision.initializeCamera();
         System.out.println("Initialization completed in " + time + " seconds");
@@ -567,8 +567,10 @@ public class FRC2014 extends SimpleRobot {
                     kickerDirection = KICKER_NOT_MOVING;
                 }
             } else if (kickerDirection == KICKER_PASSING) {
+                BallLifter.isUp = false;
                 if (Kicker.pass()) {
                     Kicker.stop();
+                    BallLifter.isUp = true;
                     kickerDirection = KICKER_NOT_MOVING;
                 }
             } else if (kickerDirection == KICKER_UNLOADING) {
@@ -600,7 +602,7 @@ public class FRC2014 extends SimpleRobot {
             //</editor-fold> 
             //<editor-fold desc="Auto Lift and Manual" defaultstate="collapsed">
             if (joyOperator.getRawButton(JOYSTICK_AUTO_LIFT_BUTTON)) {
-                double delay = 0.04330708661417321;
+                double delay = 0.44330708661417321;
                 System.out.println("delay: " + delay);
                 if (!lifterOpticalSensor.get()) { //if we see a ball, pick up
                     if (ally.value == DriverStation.Alliance.kBlue_val) {

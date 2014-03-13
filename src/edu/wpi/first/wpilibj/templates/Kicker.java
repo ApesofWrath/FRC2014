@@ -95,7 +95,9 @@ public class Kicker {
         //double throttle = joyOperator.getZ();
         //throttle = (throttle/2.0)+0.5;
         //throttle = (throttle/-2.0)+0.5;  // down == 0, up == 1
-        double motorSpeed = 0.5;
+        //double motorSpeed = 0.5;
+        double motorSpeed = 1.0;
+        
         talonKickerLeft.set(-1.0 * motorSpeed);
         talonKickerRight.set(motorSpeed);
         lcd.println(DriverStationLCD.Line.kUser6, 1, "passing                                       ");
