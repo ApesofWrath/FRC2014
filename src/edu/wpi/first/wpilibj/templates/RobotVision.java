@@ -112,7 +112,7 @@ public class RobotVision {
         t.start();
         try {
             ColorImage image;
-            while (true) {
+            while (t.get()<6.5) {
                 if (camera.freshImage()) {
                     image = camera.getImage();
                     if (image != null) {
@@ -126,6 +126,7 @@ public class RobotVision {
         } catch (NIVisionException e) {
             return -1.0;
         }
+        return -1.0;
     }
 
     public static boolean takePicture() {

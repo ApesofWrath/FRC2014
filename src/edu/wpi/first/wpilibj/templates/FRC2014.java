@@ -65,7 +65,7 @@ public class FRC2014 extends SimpleRobot {
     static final int SOLENOID_SHIFT_LOW_PORT = 1; //gear shifting
 
     //defining relay constants. these go on the digital sidecar
-    static final int SPIKE_PRESSURE_RELAY = 1;
+    static final int SPIKE_PRESSURE_RELAY = 2;
 
     //defining joystick numbers
     static final int JOYSTICK_LEFT_USB = 1;
@@ -121,7 +121,7 @@ public class FRC2014 extends SimpleRobot {
     static final double P_LIFTER = 0.084; //should be 0.084;
     static final double P_KICKER = 0.012;
 
-    static final double autonDriveTime = 1.5; // drive this duration in Auton
+    static final double autonDriveTime = 2.0; // drive this duration in Auton; 1.5 too short
     static final double kickerAbortTime = 1.0; // seconds
     static final double takingPhotoTime = 5.0; // seconds
     static final double lowerAbortTime = 0.75; // seconds
@@ -246,6 +246,8 @@ public class FRC2014 extends SimpleRobot {
 
         //comment compressor  out if you are not using it
         compress.start();
+//        Relay r = new Relay(1);
+//        r.set(Relay.Value.kOn);
 
         SmartDashboard.putString("Version Number", VERSION_NUMBER);
 
@@ -260,7 +262,7 @@ public class FRC2014 extends SimpleRobot {
         //This may cause problems becase we try to move before shifted
 //        shiftingSolenoid.set(DoubleSolenoid.Value.kReverse);
         //Responsibility of the pit crew to set the shifter position(gear) as per Mr. Weissman 2/27
-        // I know that this delay is short, but we shouldn't get in the practice (object of preposition -> noun -> practice)
+        // I know that this delay is short, but we shouldn't get in the practice
         // of delaying
         // the main thread without it being able to escape when it is no longer enabled or
         // in autonomous
@@ -273,10 +275,10 @@ public class FRC2014 extends SimpleRobot {
         //isAutonomous = true;
         lcd.println(DriverStationLCD.Line.kUser1, 1, "autonomous v" + VERSION_NUMBER);
         lcd.updateLCD();
-        //Sets the camera to look at the target. I think these values are still incorect
-        
-        cameraLeftRightServo.set(SmartDashboard.getNumber("Left Right Camera", 1));
-        cameraUpDownServo.set(SmartDashboard.getNumber("Up Down Camera", 1));
+        //Sets the camera to look at the target. I think these values are still incorrect
+
+        cameraLeftRightServo.set(SmartDashboard.getNumber("Left Right Camera", .45));
+        cameraUpDownServo.set(SmartDashboard.getNumber("Up Down Camera", .9));
         //Kill the watchdog
         driver.setSafetyEnabled(false);
 
@@ -295,17 +297,6 @@ public class FRC2014 extends SimpleRobot {
         Thread t = new Thread(icr);
         t.start();
 
-        //Lower Lifter
-        System.out.println("Lowering lifter");
-
-        double lowerStartTime = autonomousTimer.get();
-        
-        // lower the loader until it hits the ground or runs out of time
-        while ((autonomousTimer.get() - lowerStartTime) < lowerAbortTime
-                && !BallLifter.moveDown()
-                && isAutonomous()
-                && isEnabled());
-
         //Drive Forward
         System.out.println("Driving forward");
         Timer driveForwardTimer = new Timer();
@@ -316,15 +307,28 @@ public class FRC2014 extends SimpleRobot {
                 && isEnabled()) {
             //Turn value needs to be tuned: 0 is too little and 0.05 is too much
             FRC2014.driver.drive(-1.0, SmartDashboard.getNumber("Autonomous Turn Radius", 0.01));
+            BallLifter.maintainMotors();
         }
+        BallLifter.stopMotors();
         FRC2014.driver.drive(0.0, 0.0);
+
+        System.out.println("Lowering lifter");
+
+        double lowerStartTime = autonomousTimer.get();
+
+        //lower lifter
+        // lower the loader until it hits the ground or runs out of time
+        while ((autonomousTimer.get() - lowerStartTime) < lowerAbortTime
+                && !BallLifter.moveDown()
+                && isAutonomous()
+                && isEnabled());
 
         //Load the kicker before running image processing
         System.out.println("Loading kicker");
 
         double kickerStartTime = autonomousTimer.get();
 
-        // kick or wait a fixed time if something is broken
+//         kick or wait a fixed time if something is broken
         while ((autonomousTimer.get() - kickerStartTime) < kickerAbortTime
                 && !Kicker.load()
                 && isAutonomous()
@@ -372,7 +376,7 @@ public class FRC2014 extends SimpleRobot {
                     t.start();
                 }
             }
-            
+
             System.out.println("Kicking");
             // We don't need a timer here since it is at the end and it exits when we leave autonomous
             while (!Kicker.kick() && isAutonomous() && isEnabled());
@@ -391,6 +395,8 @@ public class FRC2014 extends SimpleRobot {
         double upDownServoValue = 0.5, leftRightServoValue = 0.5;
         driver.setSafetyEnabled(true);
 
+//        DigitalInput pressureSensor = new DigitalInput(PRESSURE_SENSOR_PORT);
+//        Relay spike = new Relay(SPIKE_PRESSURE_RELAY);
         resetEverything();
 
         kickerDirection = KICKER_NOT_MOVING;
@@ -399,8 +405,15 @@ public class FRC2014 extends SimpleRobot {
         while (isOperatorControl() && isEnabled()) {
 //            lcd.println(DriverStationLCD.Line.kUser2, 1, "" + driveMode);
 //            lcd.println(DriverStationLCD.Line.kUser4, 1, "" + joyLeft.getZ());
-            lcd.println(DriverStationLCD.Line.kUser5, 1, "" + joyOperator.getThrottle());
-            lcd.updateLCD();
+            //lcd.println(DriverStationLCD.Line.kUser5, 1, "" + joyOperator.getThrottle());
+            //lcd.updateLCD();
+//            lcd.println(DriverStationLCD.Line.kUser5, 1, "" + pressureSensor.get());
+//            lcd.updateLCD();
+//            if (pressureSensor.get() == false) {
+//                spike.set(Relay.Value.kForward);
+//            } else {
+//                spike.set(Relay.Value.kOff);
+//            }
 //
             System.out.println("Kicker Encoder 1 " + kickerEncoderLeft.get());
 //            System.out.println("Kicker Encoder 2 " + kickerEncoderRight.get());
@@ -605,27 +618,27 @@ public class FRC2014 extends SimpleRobot {
                 double delay = 0.44330708661417321;
                 System.out.println("delay: " + delay);
                 if (!lifterOpticalSensor.get()) { //if we see a ball, pick up
-                    if (ally.value == DriverStation.Alliance.kBlue_val) {
-                        lifterDirection = LIFTER_GOING_UP;
-                    } else if (ally.value == DriverStation.Alliance.kRed_val) {
-                        if (!timerStarted) {
-                            redAutoLiftTimer.start();
-                            timerStarted = true;
-                        }
-                    }
-                }
-                if (timerStarted && redAutoLiftTimer.get() >= delay) {
-                    redAutoLiftTimer.stop();
+//                    if (ally.value == DriverStation.Alliance.kBlue_val) {
                     lifterDirection = LIFTER_GOING_UP;
-                    timerStarted = false;
+//                    } else if (ally.value == DriverStation.Alliance.kRed_val) {
+//                        if (!timerStarted) {
+//                            redAutoLiftTimer.start();
+//                            timerStarted = true;
+//                        }
                 }
-                if (lifterLimitSwitch.get() == false) {
-                    kickerDirection = KICKER_LOADING;
-                }
-            } else {
-                redAutoLiftTimer.stop();
-                timerStarted = false;
             }
+//                if (timerStarted && redAutoLiftTimer.get() >= delay) {
+//                    redAutoLiftTimer.stop();
+//                    lifterDirection = LIFTER_GOING_UP;
+//                    timerStarted = false;
+//                }
+            if (lifterLimitSwitch.get() == false) {
+                kickerDirection = KICKER_LOADING;
+            }
+//            } else {
+//                redAutoLiftTimer.stop();
+//                timerStarted = false;
+//            }
 
             newManualState = joyOperator.getRawButton(JOYSTICK_MANUAL_BUTTON);
             if (newManualState == true) {
