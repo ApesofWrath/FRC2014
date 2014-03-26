@@ -25,7 +25,7 @@ public class RobotMotorTester {
 	private static Talon talonFrontLeft, talonFrontRight, talonBackLeft, talonBackRight,
 			talonKickerLeft, talonKickerRight, talonLoader, talonBackup;
 	private static DigitalInput lifterOpticalSensor, kickerOpticalSensor;
-	private static Encoder lifterEncoder, kickerEncoder1, kickerEncoder2, leftDriveEncoder;
+	private static Encoder kickerEncoder1, kickerEncoder2, leftDriveEncoder;
 	private static Joystick joyOperator;
 
 	private static int counter = 0;
@@ -45,7 +45,7 @@ public class RobotMotorTester {
 
 		kickerEncoder1 = FRC2014.kickerEncoderLeft;
 		kickerEncoder2 = FRC2014.kickerEncoderRight;
-		lifterEncoder = FRC2014.lifterEncoder;
+		//lifterEncoder = FRC2014.lifterEncoder;
 
 		kickerOpticalSensor = FRC2014.kickerOpticalSensor;
 		lifterOpticalSensor = FRC2014.lifterOpticalSensor;
@@ -176,12 +176,12 @@ public class RobotMotorTester {
 		if (joyOperator.getRawButton(FRC2014.JOYSTICK_RESET_ENCODERS_BUTTON) /*|| kickerOpticalSensor.get() == true*/) {
 			kickerEncoder1.reset();
 			kickerEncoder2.reset();
-			lifterEncoder.reset();
+			//lifterEncoder.reset();
 		}
 
 		String encoderString = ("" + kickerEncoder1.get() + "      ").substring(0, 4);
 		encoderString += ("" + kickerEncoder2.get() + "      ").substring(0, 4);
-		encoderString += ("" + lifterEncoder.get() + "      ").substring(0, 3);
+//		encoderString += ("" + lifterEncoder.get() + "      ").substring(0, 3);
 		encoderString += ("" + leftDriveEncoder.get() + "      ").substring(0, 5);
 		lcd.println(DriverStationLCD.Line.kUser2, 1, encoderString);
 
@@ -193,7 +193,7 @@ public class RobotMotorTester {
 			System.out.println("Kicker Encoder 1 " + kickerEncoder1.get());
 		}
 		System.out.println("Kicker Encoder 2 " + kickerEncoder2.get());
-		System.out.println("Lifter Encoder " + lifterEncoder.get());
+//		System.out.println("Lifter Encoder " + lifterEncoder.get());
 		System.out.println("Left Drive Encoder " + leftDriveEncoder.get());
 		//           System.out.println("Right Drive Encoder " + rightDriveEncoder.get());
 		System.out.println("Lifter Optical     " + lifterOpticalSensor.get());

@@ -42,6 +42,14 @@ public class Kicker {
 
     public static boolean load() {
         isLoaded = false;
+        if (kickerEncoderLeft.get() < FRC2014.KICKER_ENCODER_ERROR_POSITION && kickerEncoderLeft.get() > FRC2014.KICKER_ENCODER_NOT_RESET_POSITION) {
+            lcd.println(DriverStationLCD.Line.kUser6, 1, "finished moving                             ");
+            lcd.updateLCD();
+            talonKickerLeft.set(0);
+            talonKickerRight.set(0);
+            isLoaded = false;
+            return true;
+        }
         if (kickerEncoderLeft.get() <= FRC2014.KICKER_ENCODER_TOP_POSITION && kickerEncoderLeft.get() >= FRC2014.KICKER_ENCODER_ERROR_POSITION) {
             lcd.println(DriverStationLCD.Line.kUser6, 1, "finished moving                             ");
             lcd.updateLCD();
@@ -97,7 +105,7 @@ public class Kicker {
         //throttle = (throttle/-2.0)+0.5;  // down == 0, up == 1
         //double motorSpeed = 0.5;
         double motorSpeed = 1.0;
-        
+
         talonKickerLeft.set(-1.0 * motorSpeed);
         talonKickerRight.set(motorSpeed);
         lcd.println(DriverStationLCD.Line.kUser6, 1, "passing                                       ");

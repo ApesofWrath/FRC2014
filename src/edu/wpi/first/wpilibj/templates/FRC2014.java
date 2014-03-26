@@ -1,5 +1,6 @@
 package edu.wpi.first.wpilibj.templates;
 
+import com.sun.squawk.microedition.io.FileConnection;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
@@ -95,6 +96,7 @@ public class FRC2014 extends SimpleRobot {
     //defining encoder positions
     static final int KICKER_ENCODER_TOP_POSITION = -170; // -162, -140 moves to "12:00", top is now -171
     static final int KICKER_ENCODER_ERROR_POSITION = -200; //if cocked without a ball
+    static final int KICKER_ENCODER_NOT_RESET_POSITION = -300;
     static final int KICKER_ENCODER_KICK_POSITION = 160;
     static final int KICKER_ENCODER_REST_POSITION = -10;
     static final int KICKER_ENCODER_PASS_POSITION = 55;//40;
@@ -121,10 +123,11 @@ public class FRC2014 extends SimpleRobot {
     static final double P_LIFTER = 0.084; //should be 0.084;
     static final double P_KICKER = 0.012;
 
-    static final double autonDriveTime = 2.0; // drive this duration in Auton; 1.5 too short
+    static final double autonDriveTime = 1.95; // drive this duration in Auton; 1.5 too short
     static final double kickerAbortTime = 1.0; // seconds
-    static final double takingPhotoTime = 5.0; // seconds
+    static final double takingPhotoTime = 4.0; // seconds
     static final double lowerAbortTime = 0.75; // seconds
+    static final double autonWaitTime = 1.0; // seconds, wait before lowering the lifter
 
     //for autonomous
     static final int WANTED_NUMBER_OF_HOT_PHOTOS = 2;
@@ -140,7 +143,8 @@ public class FRC2014 extends SimpleRobot {
     private Joystick joyLeft;
     private Joystick joyRight;
     private Joystick joyOperator;
-    protected static Encoder kickerEncoderLeft, kickerEncoderRight, lifterEncoder, rightDriveEncoder, leftDriveEncoder;
+//    protected static Encoder lifterEncoder;
+    protected static Encoder kickerEncoderLeft, kickerEncoderRight, rightDriveEncoder, leftDriveEncoder;
     private Servo cameraUpDownServo, cameraLeftRightServo;
     static final String VERSION_NUMBER = "1.0.0";
     protected static DigitalInput kickerOpticalSensor, lifterOpticalSensor;
@@ -166,6 +170,9 @@ public class FRC2014 extends SimpleRobot {
     private Timer redAutoLiftTimer;
     protected static boolean isAutonomous = false;
     private boolean timerStarted = false;
+
+    private boolean isInitialized;
+
     // </editor-fold>
     /**
      * This function is called as soon as the robot is enabled.
@@ -209,7 +216,7 @@ public class FRC2014 extends SimpleRobot {
 
         kickerEncoderLeft = new Encoder(KICKER_LEFT_ENCODER_PORT_A, KICKER_LEFT_ENCODER_PORT_B);
 //        kickerEncoderRight = new Encoder(KICKER_RIGHT_ENCODER_PORT_A, KICKER_RIGHT_ENCODER_PORT_B);
-        lifterEncoder = new Encoder(LIFTER_ENCODER_PORT_A, LIFTER_ENCODER_PORT_B);
+        //lifterEncoder = new Encoder(LIFTER_ENCODER_PORT_A, LIFTER_ENCODER_PORT_B);
         rightDriveEncoder = new Encoder(RIGHT_DRIVE_ENCODER_PORT_A, RIGHT_DRIVE_ENCODER_PORT_B);
         leftDriveEncoder = new Encoder(LEFT_DRIVE_ENCODER_PORT_A, LEFT_DRIVE_ENCODER_PORT_B);
 
@@ -230,9 +237,13 @@ public class FRC2014 extends SimpleRobot {
         SmartDashboard.putNumber("Lifter Slowdown Multiplier", 0.75);
         System.out.println("Attempting to initialize Camera.");
         double time = RobotVision.initializeCamera();
+        if (time < 0) {
+            isInitialized = false;
+        } else {
+            isInitialized = true;
+        }
         System.out.println("Initialization completed in " + time + " seconds");
         SmartDashboard.putBoolean("Camera Initialized", (time < 0));
-
         driver.setInvertedMotor(RobotDrive.MotorType.kFrontLeft, true);
         driver.setInvertedMotor(RobotDrive.MotorType.kRearLeft, true);
         driver.setInvertedMotor(RobotDrive.MotorType.kFrontRight, true);
@@ -240,7 +251,7 @@ public class FRC2014 extends SimpleRobot {
 
         kickerEncoderLeft.start();
 //        kickerEncoderRight.start();
-        lifterEncoder.start();
+//        lifterEncoder.start();
         rightDriveEncoder.start();
         leftDriveEncoder.start();
 
@@ -259,7 +270,7 @@ public class FRC2014 extends SimpleRobot {
      * This function is called once each time the robot enters autonomous mode.
      */
     public void autonomous() {
-        //This may cause problems becase we try to move before shifted
+        //This may cause problems because we try to move before shifted
 //        shiftingSolenoid.set(DoubleSolenoid.Value.kReverse);
         //Responsibility of the pit crew to set the shifter position(gear) as per Mr. Weissman 2/27
         // I know that this delay is short, but we shouldn't get in the practice
@@ -271,7 +282,7 @@ public class FRC2014 extends SimpleRobot {
 //        d.start();
 //        while (d.get() <= .1 && isAutonomous() && isEnabled());
 
-        // do we need this any more?
+        // do we need this anymore?
         //isAutonomous = true;
         lcd.println(DriverStationLCD.Line.kUser1, 1, "autonomous v" + VERSION_NUMBER);
         lcd.updateLCD();
@@ -312,6 +323,14 @@ public class FRC2014 extends SimpleRobot {
         BallLifter.stopMotors();
         FRC2014.driver.drive(0.0, 0.0);
 
+        System.out.println("Waiting");
+        double startTime = autonomousTimer.get();
+        while ((autonomousTimer.get() - startTime < autonWaitTime)
+                && isAutonomous()
+                && isEnabled()) {
+            BallLifter.maintainMotors();
+        }
+        
         System.out.println("Lowering lifter");
 
         double lowerStartTime = autonomousTimer.get();
@@ -338,7 +357,8 @@ public class FRC2014 extends SimpleRobot {
         while (autonomousTimer.get() <= takingPhotoTime
                 && takingPhoto
                 && isAutonomous()
-                && isEnabled()) {
+                && isEnabled()
+                && isInitialized) {
 
             result = icr.getResult();
             if (result == null || t.isAlive()) {
@@ -377,12 +397,12 @@ public class FRC2014 extends SimpleRobot {
                 }
             }
 
-            System.out.println("Kicking");
-            // We don't need a timer here since it is at the end and it exits when we leave autonomous
-            while (!Kicker.kick() && isAutonomous() && isEnabled());
         }
 
         //Kick because a hot target has been found or 5 seconds have passed
+        System.out.println("Kicking");
+        // We don't need a timer here since it is at the end and it exits when we leave autonomous
+        while (!Kicker.kick() && isAutonomous() && isEnabled());
     }
 
     /**
@@ -402,6 +422,11 @@ public class FRC2014 extends SimpleRobot {
         kickerDirection = KICKER_NOT_MOVING;
         lifterDirection = LIFTER_NOT_MOVING;
 
+        FRC2014.driver.drive(0.0, 0.0);
+
+        Timer printTime = new Timer();
+        printTime.start();
+
         while (isOperatorControl() && isEnabled()) {
 //            lcd.println(DriverStationLCD.Line.kUser2, 1, "" + driveMode);
 //            lcd.println(DriverStationLCD.Line.kUser4, 1, "" + joyLeft.getZ());
@@ -415,14 +440,18 @@ public class FRC2014 extends SimpleRobot {
 //                spike.set(Relay.Value.kOff);
 //            }
 //
-            System.out.println("Kicker Encoder 1 " + kickerEncoderLeft.get());
-//            System.out.println("Kicker Encoder 2 " + kickerEncoderRight.get());
-            System.out.println("Lifter Encoder " + lifterEncoder.get());
-            System.out.println("Left Drive Encoder " + leftDriveEncoder.get());
-            System.out.println("Right Drive Encoder " + rightDriveEncoder.get());
-            System.out.println("Lifter Optical     " + lifterOpticalSensor.get());
-//            System.out.println("Kicker Optical     " + kickerOpticalSensor.get());
-
+            if (printTime.get() > .3) {
+                System.out.println("Kicker Encoder 1 " + kickerEncoderLeft.get());
+                //          System.out.println("Kicker Encoder 2 " + kickerEncoderRight.get());
+                //System.out.println("Lifter Encoder " + lifterEncoder.get());
+                //  System.out.println("Left Drive Encoder " + leftDriveEncoder.get());
+                //  System.out.println("Right Drive Encoder " + rightDriveEncoder.get());
+                System.out.println("Lifter Optical     " + lifterOpticalSensor.get());
+                System.out.println("Kicker Optical     " + kickerOpticalSensor.get());
+                System.out.println("Kicker State   " + kickerDirection);
+                System.out.println("---------------------------");
+                printTime.reset();
+            }
             // <editor-fold defaultstate="collapsed" desc="Drive Toggler">
             if (joyLeft.getRawButton(JOYSTICK_ARCADEMODE_BUTTON)
                     || joyRight.getRawButton(JOYSTICK_ARCADEMODE_BUTTON)) {
@@ -538,7 +567,7 @@ public class FRC2014 extends SimpleRobot {
 
             newLiftOptState = lifterOpticalSensor.get();
             if (oldLiftOptState != newLiftOptState) {
-                BallLifter.resetEncoders();
+                //BallLifter.resetEncoders();
             }
             oldLiftOptState = newLiftOptState;
             //</editor-fold>
@@ -592,7 +621,10 @@ public class FRC2014 extends SimpleRobot {
                     kickerDirection = KICKER_NOT_MOVING;
                 }
             } else {
-                SmartDashboard.putBoolean("Maintaining Kicker", Kicker.maintainKicker());
+//                if (Kicker.isLoaded) {
+//                    SmartDashboard.putBoolean("Maintaining Kicker", Kicker.maintainKicker());
+//                }
+
             }
 
             if (kickerEncoderLeft.getRate() > 0) { //it is kicking
@@ -615,7 +647,8 @@ public class FRC2014 extends SimpleRobot {
             //</editor-fold> 
             //<editor-fold desc="Auto Lift and Manual" defaultstate="collapsed">
             if (joyOperator.getRawButton(JOYSTICK_AUTO_LIFT_BUTTON)) {
-                double delay = 0.44330708661417321;
+//                double delay = 0.44330708661417321;
+                double delay = 0.54330708661417321;
                 System.out.println("delay: " + delay);
                 if (!lifterOpticalSensor.get()) { //if we see a ball, pick up
 //                    if (ally.value == DriverStation.Alliance.kBlue_val) {
@@ -626,14 +659,14 @@ public class FRC2014 extends SimpleRobot {
 //                            timerStarted = true;
 //                        }
                 }
-            }
 //                if (timerStarted && redAutoLiftTimer.get() >= delay) {
 //                    redAutoLiftTimer.stop();
 //                    lifterDirection = LIFTER_GOING_UP;
 //                    timerStarted = false;
 //                }
-            if (lifterLimitSwitch.get() == false) {
-                kickerDirection = KICKER_LOADING;
+                if (lifterLimitSwitch.get() == false) {
+                    kickerDirection = KICKER_LOADING;
+                }
             }
 //            } else {
 //                redAutoLiftTimer.stop();
@@ -643,6 +676,8 @@ public class FRC2014 extends SimpleRobot {
             newManualState = joyOperator.getRawButton(JOYSTICK_MANUAL_BUTTON);
             if (newManualState == true) {
                 double yAxis = joyOperator.getY();
+                //Square the y Axis so there is finer control
+                yAxis = yAxis * Math.abs(yAxis);
                 talonKickerLeft.set(yAxis);
                 talonKickerRight.set(-1 * yAxis);
             } else if (newManualState == false && oldManualState == true) {
@@ -655,6 +690,14 @@ public class FRC2014 extends SimpleRobot {
         }
     }
 
+    protected void disabled() {
+        super.disabled(); //To change body of generated methods, choose Tools | Templates.
+        Kicker.stop();
+        BallLifter.stopMotors();
+    }
+
+    
+    
     /**
      * This function is called once each time the robot enters test mode.
      */
@@ -679,15 +722,19 @@ public class FRC2014 extends SimpleRobot {
     }
 
     public void resetEverything() {
+        BallLifter.stopMotors();
+        Kicker.stop();
         kickerEncoderLeft.reset();
 //        kickerEncoderRight.reset();
-        lifterEncoder.reset();
+        //lifterEncoder.reset();
         leftDriveEncoder.reset();
         rightDriveEncoder.reset();
         BallLifter.isCalibrated = false;
         BallLifter.isUp = true;
         BallLifter.isDown = false;
         Kicker.isLoaded = false;
+        BallLifter.downTimerStarted = false;
+        BallLifter.downTimer = new Timer();
         newLiftOptState = lifterLimitSwitch.get();
         oldLiftOptState = newLiftOptState;
         newKickOptState = kickerOpticalSensor.get();
