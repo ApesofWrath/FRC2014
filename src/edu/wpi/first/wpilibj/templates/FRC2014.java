@@ -1,16 +1,15 @@
 package edu.wpi.first.wpilibj.templates;
 
-import com.sun.squawk.microedition.io.FileConnection;
 import edu.wpi.first.wpilibj.Compressor;
 import edu.wpi.first.wpilibj.DigitalInput;
 import edu.wpi.first.wpilibj.DoubleSolenoid;
-import edu.wpi.first.wpilibj.Joystick;
-import edu.wpi.first.wpilibj.SimpleRobot;
-import edu.wpi.first.wpilibj.RobotDrive;
-import edu.wpi.first.wpilibj.DriverStationLCD;
 import edu.wpi.first.wpilibj.DriverStation;
+import edu.wpi.first.wpilibj.DriverStationLCD;
 import edu.wpi.first.wpilibj.Encoder;
+import edu.wpi.first.wpilibj.Joystick;
+import edu.wpi.first.wpilibj.RobotDrive;
 import edu.wpi.first.wpilibj.Servo;
+import edu.wpi.first.wpilibj.SimpleRobot;
 import edu.wpi.first.wpilibj.Talon;
 import edu.wpi.first.wpilibj.Timer;
 import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
@@ -92,6 +91,7 @@ public class FRC2014 extends SimpleRobot {
     static final int JOYSTICK_TEST_KICKER_BUTTON = 11; // The button in Test to power the Kicker Motors properly
     static final int JOYSTICK_PASS_BUTTON = 11; //for operator joystick
     static final int JOYSTICK_TAKE_PICTURE_BUTTON = 12; //for operator joystick
+    static final int JOYSTICK_COCK_KICK_BUTTON = 9; //for operator joystick
 
     //defining encoder positions
     static final int KICKER_ENCODER_TOP_POSITION = -170; // -162, -140 moves to "12:00", top is now -171
@@ -131,28 +131,13 @@ public class FRC2014 extends SimpleRobot {
 
     //for autonomous
     static final int WANTED_NUMBER_OF_HOT_PHOTOS = 2;
-    //defining pneumatic objects
-    private Compressor compress;
-    private DoubleSolenoid shiftingSolenoid;
 
     //defining others
     protected static RobotDrive driver;
     protected static DriverStationLCD lcd;
-    private DriverStation ds;
-    private DriverStation.Alliance ally;
-    private Joystick joyLeft;
-    private Joystick joyRight;
-    private Joystick joyOperator;
-//    protected static Encoder lifterEncoder;
     protected static Encoder kickerEncoderLeft, kickerEncoderRight, rightDriveEncoder, leftDriveEncoder;
-    private Servo cameraUpDownServo, cameraLeftRightServo;
     static final String VERSION_NUMBER = "1.0.0";
     protected static DigitalInput kickerOpticalSensor, lifterOpticalSensor;
-    //kickerOpticalSensor normally false, lifterOpticalSensor normally true, lifterLimitSwitch normally true
-    // private KickerStateMachine kickerStates;
-    private int driveMode;
-    private int lifterDirection = LIFTER_NOT_MOVING;
-    private int kickerDirection = KICKER_NOT_MOVING;
 
     protected static Talon talonFrontLeft, talonFrontRight, talonBackLeft, talonBackRight,
             talonKickerLeft, talonKickerRight, talonLoader, talonBackup;
@@ -160,6 +145,21 @@ public class FRC2014 extends SimpleRobot {
     //positive value moves talonKickerRight to kick
     //negative value moves talonLoader to up
     protected static DigitalInput lifterLimitSwitch;
+    protected static boolean isAutonomous = false;
+    //defining pneumatic objects
+    private Compressor compress;
+    private DoubleSolenoid shiftingSolenoid;
+    private DriverStation ds;
+    private DriverStation.Alliance ally;
+    private Joystick joyLeft;
+    private Joystick joyRight;
+    private Joystick joyOperator;
+    private Servo cameraUpDownServo, cameraLeftRightServo;
+    //kickerOpticalSensor normally false, lifterOpticalSensor normally true, lifterLimitSwitch normally true
+    // private KickerStateMachine kickerStates;
+    private int driveMode;
+    private int lifterDirection = LIFTER_NOT_MOVING;
+    private int kickerDirection = KICKER_NOT_MOVING;
 
     private boolean newKickOptState = true, oldKickOptState = true;
     private boolean newLiftOptState = false;
@@ -168,10 +168,11 @@ public class FRC2014 extends SimpleRobot {
     private boolean oldManualState = false;
 
     private Timer redAutoLiftTimer;
-    protected static boolean isAutonomous = false;
+    private Timer autoLoadKickerTimer;
     private boolean timerStarted = false;
 
     private boolean isInitialized;
+    private boolean cockKickerStarted;
 
     // </editor-fold>
     /**
@@ -183,6 +184,7 @@ public class FRC2014 extends SimpleRobot {
         ds = DriverStation.getInstance();
 
         redAutoLiftTimer = new Timer();
+        autoLoadKickerTimer = new Timer();
 
         joyLeft = new Joystick(JOYSTICK_LEFT_USB);
         joyRight = new Joystick(JOYSTICK_RIGHT_USB);
@@ -330,7 +332,7 @@ public class FRC2014 extends SimpleRobot {
                 && isEnabled()) {
             BallLifter.maintainMotors();
         }
-        
+
         System.out.println("Lowering lifter");
 
         double lowerStartTime = autonomousTimer.get();
@@ -342,7 +344,7 @@ public class FRC2014 extends SimpleRobot {
                 && isAutonomous()
                 && isEnabled());
 
-        //Load the kicker before running image processing
+        //Load the kicker before isRunning image processing
         System.out.println("Loading kicker");
 
         double kickerStartTime = autonomousTimer.get();
@@ -359,6 +361,10 @@ public class FRC2014 extends SimpleRobot {
                 && isAutonomous()
                 && isEnabled()
                 && isInitialized) {
+
+            if (joyOperator.getRawButton(JOYSTICK_TAKE_PICTURE_BUTTON)) {
+                RobotVision.takePicture("Auton_Button_");
+            }
 
             result = icr.getResult();
             if (result == null || t.isAlive()) {
@@ -384,7 +390,7 @@ public class FRC2014 extends SimpleRobot {
                     // save the picture, but if it is less than 2 seconds from Teleop, don't since we aren't threading it.
                     if (autonomousTimer.get() < 9) {
                         System.out.println("Taking picture");
-                        RobotVision.takePicture();
+                        RobotVision.takePicture("Goal_Hot_");
                         System.out.println("Picture taken");
                     }
                 }
@@ -401,6 +407,7 @@ public class FRC2014 extends SimpleRobot {
 
         //Kick because a hot target has been found or 5 seconds have passed
         System.out.println("Kicking");
+        RobotVision.takePicture("Auton_Kicking_");
         // We don't need a timer here since it is at the end and it exits when we leave autonomous
         while (!Kicker.kick() && isAutonomous() && isEnabled());
     }
@@ -531,7 +538,7 @@ public class FRC2014 extends SimpleRobot {
             cameraUpDownServo.set(upDownServoValue);
 
             if (joyOperator.getRawButton(JOYSTICK_TAKE_PICTURE_BUTTON) && (!oldPictureValue)) {
-                if (RobotVision.takePicture()) {
+                if (RobotVision.takePicture("Teleop_Button_")) {
                     oldPictureValue = true;
                 } else {
                     oldPictureValue = false;
@@ -645,8 +652,16 @@ public class FRC2014 extends SimpleRobot {
                 Kicker.resetEncoders();
             }
             //</editor-fold> 
-            //<editor-fold desc="Auto Lift and Manual" defaultstate="collapsed">
+            //<editor-fold desc="Auto Lift, Manual, Cock/Kick" defaultstate="collapsed">
+            
+            //Autolifter. No longer using the alliance setting as of Davis competition.
+            //Commented stuff is from alliance setting
+            
+            // Reset the timer if the button is not pressed
+            autoLoadKickerTimer.reset();
+            autoLoadKickerTimer.stop();
             if (joyOperator.getRawButton(JOYSTICK_AUTO_LIFT_BUTTON)) {
+                autoLoadKickerTimer.start();
 //                double delay = 0.44330708661417321;
                 double delay = 0.54330708661417321;
                 System.out.println("delay: " + delay);
@@ -664,8 +679,11 @@ public class FRC2014 extends SimpleRobot {
 //                    lifterDirection = LIFTER_GOING_UP;
 //                    timerStarted = false;
 //                }
-                if (lifterLimitSwitch.get() == false) {
-                    kickerDirection = KICKER_LOADING;
+                // added the timer to make a delay for the auto load's lifting and then cocking actions
+                if (autoLoadKickerTimer.get() > delay) {
+                    if (lifterLimitSwitch.get() == false) {
+                        kickerDirection = KICKER_LOADING;
+                    }
                 }
             }
 //            } else {
@@ -673,6 +691,9 @@ public class FRC2014 extends SimpleRobot {
 //                timerStarted = false;
 //            }
 
+            
+            //manual button. this manually moves the kicker.
+            //don't use this unless you are desperate. It works though
             newManualState = joyOperator.getRawButton(JOYSTICK_MANUAL_BUTTON);
             if (newManualState == true) {
                 double yAxis = joyOperator.getY();
@@ -684,6 +705,20 @@ public class FRC2014 extends SimpleRobot {
                 Kicker.stop();
             }
             oldManualState = newManualState;
+            
+            //kick/cock button. we are adding this on 3/26 at the request of Wasay
+            //this button first cocks the kicker and then kicks immediately after
+            if (joyOperator.getRawButton(JOYSTICK_COCK_KICK_BUTTON)) {
+                if (Kicker.isLoaded && !cockKickerStarted) {
+                    kickerDirection = KICKER_KICKING;
+                    cockKickerStarted = true; //makes sure we only kick/load once
+                } else if (kickerDirection == KICKER_NOT_MOVING && !cockKickerStarted) {
+                    kickerDirection = KICKER_LOADING;
+                }
+            } else {
+                cockKickerStarted = false;
+            }
+            
             //</editor-fold> 
             SmartDashboard.putBoolean("Ball loaded:", !lifterOpticalSensor.get());
             SmartDashboard.putBoolean("Fork down:", !BallLifter.isUp);
@@ -696,8 +731,6 @@ public class FRC2014 extends SimpleRobot {
         BallLifter.stopMotors();
     }
 
-    
-    
     /**
      * This function is called once each time the robot enters test mode.
      */

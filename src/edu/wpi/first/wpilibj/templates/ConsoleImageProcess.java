@@ -62,9 +62,7 @@ public class ConsoleImageProcess {
 
                         System.out.print(printBuffer[x][y]);
                     }
-                }
-                else
-                {
+                } else {
                     // print info lines here
                     //printBuffer[x][y] =
                 }

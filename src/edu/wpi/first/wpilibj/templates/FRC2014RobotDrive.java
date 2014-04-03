@@ -48,7 +48,7 @@ public class FRC2014RobotDrive extends RobotDrive {
         rightEncoder.start();
     }
 
-	// Do not use this code yet.  It will Run the motors at the same rate all the time.  Make it calculate the PWM value from the difference.
+    // Do not use this code yet.  It will Run the motors at the same rate all the time.  Make it calculate the PWM value from the difference.
     public void tankDrive(GenericHID leftStick, GenericHID rightStick) {
         double leftEncoderRate = leftEncoder.getRate();
         double rightEncoderRate = rightEncoder.getRate();

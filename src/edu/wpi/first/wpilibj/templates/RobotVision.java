@@ -112,7 +112,7 @@ public class RobotVision {
         t.start();
         try {
             ColorImage image;
-            while (t.get()<6.5) {
+            while (t.get() < 6.5) {
                 if (camera.freshImage()) {
                     image = camera.getImage();
                     if (image != null) {
@@ -129,13 +129,13 @@ public class RobotVision {
         return -1.0;
     }
 
-    public static boolean takePicture() {
+    public static boolean takePicture(String prefix) {
         if (camera.freshImage()) {
             try {
                 Calendar cal = Calendar.getInstance();
                 Date d = cal.getTime();
                 ColorImage image = camera.getImage();
-                image.write("/img" + d.getTime() + ".bmp");
+                image.write("/" + prefix + "img" + d.getTime() + ".bmp");
                 return true;
             } catch (AxisCameraException e) {
                 return false;
@@ -215,8 +215,8 @@ public class RobotVision {
                         System.out.println("particle: " + i + "is a Horizontal Target centerX: " + report.center_mass_x + "centerY: " + report.center_mass_y);
                         horizontalTargets[horizontalTargetCount++] = i; //Add particle to target array and increment count
                     } else if (scoreCompare(scores[i], true)) { //we have found a verticle target
-                        image.write("/image.bmp"); //write what it sees for debugging
-                        filteredImage.write("/filteredImage.bmp");
+                        image.write("/image" + Calendar.getInstance().getTime().getTime() + ".bmp"); //write what it sees for debugging
+                        filteredImage.write("/filteredImage" + Calendar.getInstance().getTime().getTime() + ".bmp");
                         System.out.println("particle: " + i + "is a Vertical Target centerX: " + report.center_mass_x + "centerY: " + report.center_mass_y);
                         verticalTargets[verticalTargetCount++] = i;  //Add particle to target array and increment count
                     } else {
@@ -307,11 +307,12 @@ public class RobotVision {
      * behind this approach see the Vision Processing section of the
      * ScreenStepsLive documentation.
      *
-     * @param image The image to use for measuring the particle estimated
-     * rectangle
+     * @param image  The image to use for measuring the particle estimated
+     *               rectangle
      * @param report The Particle Analysis Report for the particle
-     * @param outer True if the particle should be treated as an outer target,
-     * false to treat it as a center target
+     * @param outer  True if the particle should be treated as an outer target,
+     *               false to treat it as a center target
+     * <p>
      * @return The estimated distance to the target in Inches.
      */
     static double computeDistance(BinaryImage image, ParticleAnalysisReport report, int particleNumber) throws NIVisionException {
@@ -334,12 +335,13 @@ public class RobotVision {
      * moving to the left or right. The equivalent rectangle is the rectangle
      * with sides x and y where particle area= x*y and particle perimeter= 2x+2y
      *
-     * @param image The image containing the particle to score, needed to
-     * perform additional measurements
+     * @param image  The image containing the particle to score, needed to
+     *               perform additional measurements
      * @param report The Particle Analysis Report for the particle, used for the
-     * width, height, and particle number
-     * @param outer Indicates whether the particle aspect ratio should be
-     * compared to the ratio for the inner target or the outer
+     *               width, height, and particle number
+     * @param outer  Indicates whether the particle aspect ratio should be
+     *               compared to the ratio for the inner target or the outer
+     * <p>
      * @return The aspect ratio score (0-100)
      */
     public static double scoreAspectRatio(BinaryImage image, ParticleAnalysisReport report, int particleNumber, boolean vertical) throws NIVisionException {
@@ -365,8 +367,8 @@ public class RobotVision {
      * appears to be a target
      *
      * @param scores The structure containing the scores to compare
-     * @param outer True if the particle should be treated as an outer target,
-     * false to treat it as a center target
+     * @param outer  True if the particle should be treated as an outer target,
+     *               false to treat it as a center target
      *
      * @return True if the particle meets all limits, false otherwise
      */
@@ -391,6 +393,7 @@ public class RobotVision {
      * surrounding it. A perfect rectangle would cover the entire bounding box.
      *
      * @param report The Particle Analysis Report for the particle to score
+     * <p>
      * @return The rectangularity score (0-100)
      */
     static double scoreRectangularity(ParticleAnalysisReport report) {
