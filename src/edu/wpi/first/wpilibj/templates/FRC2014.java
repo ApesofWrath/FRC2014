@@ -20,10 +20,10 @@ import edu.wpi.first.wpilibj.smartdashboard.SmartDashboard;
  View commit messages by right clicking in project folder and selecting git log.
  */
 //TODO:
-//Key: if it has an x, it has been coded but not tested. If you test, delete the todo item
-//maintenance of kicker and lifter positions X
-//manual control for kicker and lifter X
-//synchronize kicker motors
+//Fix autonomous - move camera correctly
+//Get pictures from cRIO
+//Pickup consistently on top - switch calibration
+//Less power on kick
 public class FRC2014 extends SimpleRobot {
     // <editor-fold defaultstate="collapsed" desc="Variable Definitions">
 
@@ -118,6 +118,7 @@ public class FRC2014 extends SimpleRobot {
     static final int KICKER_NOT_MOVING = 3;
     static final int KICKER_PASSING = 4;
     static final int KICKER_UNLOADING = 5;
+    static final int KICKER_SLOW_KICKING = 6;
 
     //p-controller constants
     static final double P_LIFTER = 0.084; //should be 0.084;
@@ -127,7 +128,7 @@ public class FRC2014 extends SimpleRobot {
     static final double kickerAbortTime = 1.0; // seconds
     static final double takingPhotoTime = 4.0; // seconds
     static final double lowerAbortTime = 0.75; // seconds
-    static final double autonWaitTime = 1.0; // seconds, wait before lowering the lifter
+    static final double autonWaitTime = 0.8; // seconds, wait before lowering the lifter
 
     //for autonomous
     static final int WANTED_NUMBER_OF_HOT_PHOTOS = 2;
@@ -615,6 +616,11 @@ public class FRC2014 extends SimpleRobot {
                     Kicker.stop();
                     kickerDirection = KICKER_NOT_MOVING;
                 }
+            } else if (kickerDirection == KICKER_SLOW_KICKING) {
+                if (Kicker.kick(.8)) {
+                    Kicker.stop();
+                    kickerDirection = KICKER_NOT_MOVING;
+                }
             } else if (kickerDirection == KICKER_PASSING) {
                 BallLifter.isUp = false;
                 if (Kicker.pass()) {
@@ -710,7 +716,7 @@ public class FRC2014 extends SimpleRobot {
             //this button first cocks the kicker and then kicks immediately after
             if (joyOperator.getRawButton(JOYSTICK_COCK_KICK_BUTTON)) {
                 if (Kicker.isLoaded && !cockKickerStarted) {
-                    kickerDirection = KICKER_KICKING;
+                    kickerDirection = KICKER_SLOW_KICKING;
                     cockKickerStarted = true; //makes sure we only kick/load once
                 } else if (kickerDirection == KICKER_NOT_MOVING && !cockKickerStarted) {
                     kickerDirection = KICKER_LOADING;

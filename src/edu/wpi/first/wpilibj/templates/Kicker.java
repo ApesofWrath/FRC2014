@@ -70,6 +70,9 @@ public class Kicker {
     }
 
     public static boolean kick() {
+        return kick(.9);
+    }
+    public static boolean kick(double speed) {
         isLoaded = false;
         if (kickerEncoderLeft.get() >= FRC2014.KICKER_ENCODER_KICK_POSITION) {
             lcd.println(DriverStationLCD.Line.kUser6, 1, "finished kicking                             ");
@@ -82,7 +85,7 @@ public class Kicker {
         //double throttle = joyOperator.getZ();
         //throttle = (throttle/2.0)+0.5;
         //throttle = (throttle/-2.0)+0.5;  // down == 0, up == 1
-        double throttle = 1.0;
+        double throttle = speed;
         talonKickerLeft.set(-1.0 * throttle);
         talonKickerRight.set(throttle);
         lcd.println(DriverStationLCD.Line.kUser6, 1, "kicking                                       ");
@@ -104,7 +107,7 @@ public class Kicker {
         //throttle = (throttle/2.0)+0.5;
         //throttle = (throttle/-2.0)+0.5;  // down == 0, up == 1
         //double motorSpeed = 0.5;
-        double motorSpeed = 0.8;
+        double motorSpeed = 0.85;
 
         talonKickerLeft.set(-1.0 * motorSpeed);
         talonKickerRight.set(motorSpeed);

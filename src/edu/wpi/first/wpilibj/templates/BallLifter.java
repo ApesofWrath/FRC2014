@@ -79,9 +79,11 @@ public class BallLifter {
 
     }
 
-    public static boolean moveDown() {
+    public static boolean moveDown(double power) {
         isUp = false;
         isDown = false;
+        // positive to go down
+        power = Math.abs(power);
         if (!downTimerStarted) {
             downTimer.start();
             downTimerStarted = true;
@@ -96,8 +98,12 @@ public class BallLifter {
             downTimerStarted = false;
             return true;
         }
-        talonLoader.set(0.5);
+        talonLoader.set(power);
         return false;
+    }
+    
+    public static boolean moveDown(){
+        return moveDown(0.5);
     }
 
     /*public static void resetEncoders() {
