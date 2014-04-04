@@ -88,6 +88,7 @@ public class FRC2014 extends SimpleRobot {
     static final int JOYSTICK_MANUAL_BUTTON = 7; //for operator joystick
     static final int JOYSTICK_RESET_ENCODERS_BUTTON = 8; // The button in Test to power the Kicker Motors properly
 //    static final int SET_SAMPLE_RATE_BUTTON = 10; //for operator joystick
+    static final int JOYSTICK_COCK_KICK_FAST_BUTTON = 10; //added at Rahil's request to do the cock/kick but at 100% speed
     static final int JOYSTICK_TEST_KICKER_BUTTON = 11; // The button in Test to power the Kicker Motors properly
     static final int JOYSTICK_PASS_BUTTON = 11; //for operator joystick
     static final int JOYSTICK_TAKE_PICTURE_BUTTON = 12; //for operator joystick
@@ -119,6 +120,7 @@ public class FRC2014 extends SimpleRobot {
     static final int KICKER_PASSING = 4;
     static final int KICKER_UNLOADING = 5;
     static final int KICKER_SLOW_KICKING = 6;
+    static final int KICKER_FAST_KICKING = 7;
 
     //p-controller constants
     static final double P_LIFTER = 0.084; //should be 0.084;
@@ -174,6 +176,7 @@ public class FRC2014 extends SimpleRobot {
 
     private boolean isInitialized;
     private boolean cockKickerStarted;
+    private boolean fastCKStarted;
 
     // </editor-fold>
     /**
@@ -621,6 +624,11 @@ public class FRC2014 extends SimpleRobot {
                     Kicker.stop();
                     kickerDirection = KICKER_NOT_MOVING;
                 }
+            } else if (kickerDirection == KICKER_FAST_KICKING) {
+                if (Kicker.kick(1.0)) {
+                    Kicker.stop();
+                    kickerDirection = KICKER_NOT_MOVING;
+                }
             } else if (kickerDirection == KICKER_PASSING) {
                 BallLifter.isUp = false;
                 if (Kicker.pass()) {
@@ -725,6 +733,17 @@ public class FRC2014 extends SimpleRobot {
                 cockKickerStarted = false;
             }
             
+            if (joyOperator.getRawButton(JOYSTICK_COCK_KICK_FAST_BUTTON)) {
+                if (Kicker.isLoaded && !fastCKStarted) {
+                    kickerDirection = KICKER_FAST_KICKING;
+                    fastCKStarted = true; //makes sure we only kick/load once
+                } else if (kickerDirection == KICKER_NOT_MOVING && !fastCKStarted) {
+                    kickerDirection = KICKER_LOADING;
+                }
+            } else {
+                fastCKStarted = false;
+            }
+            
             //</editor-fold> 
             SmartDashboard.putBoolean("Ball loaded:", !lifterOpticalSensor.get());
             SmartDashboard.putBoolean("Fork down:", !BallLifter.isUp);
@@ -785,5 +804,7 @@ public class FRC2014 extends SimpleRobot {
         }
         SmartDashboard.putString("Alliance", ally.name);
         timerStarted = false;
+        cockKickerStarted = false;
+        fastCKStarted = false;
     }
 }
