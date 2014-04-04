@@ -617,7 +617,7 @@ public class FRC2014 extends SimpleRobot {
                     kickerDirection = KICKER_NOT_MOVING;
                 }
             } else if (kickerDirection == KICKER_SLOW_KICKING) {
-                if (Kicker.kick(.8)) {
+                if (Kicker.kick(.83)) {
                     Kicker.stop();
                     kickerDirection = KICKER_NOT_MOVING;
                 }
