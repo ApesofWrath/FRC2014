@@ -137,9 +137,7 @@ public class RobotVision {
                 ColorImage image = camera.getImage();
                 image.write("/" + prefix + "img" + d.getTime() + ".bmp");
                 return true;
-            } catch (AxisCameraException e) {
-                return false;
-            } catch (NIVisionException e) {
+            } catch (Exception e) {
                 return false;
             }
         } else {

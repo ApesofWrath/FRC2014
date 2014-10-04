@@ -108,7 +108,7 @@ public class FRC2014 extends SimpleRobot {
 
     //defining speeds
     static final double CAMERA_SERVO_SPEED = 0.006;
-    static final double COCKING_SPEED = 0.295;
+    static final double COCKING_SPEED = 0.45;
 
     //defining directions
     static final int LIFTER_GOING_UP = 1;
@@ -126,7 +126,7 @@ public class FRC2014 extends SimpleRobot {
     static final double P_LIFTER = 0.084; //should be 0.084;
     static final double P_KICKER = 0.012;
 
-    static final double autonDriveTime = 1.95; // drive this duration in Auton; 1.5 too short
+    static final double autonDriveTime = 2.1; // drive this duration in Auton; 1.5 too short
     static final double kickerAbortTime = 1.0; // seconds
     static final double takingPhotoTime = 4.0; // seconds
     static final double lowerAbortTime = 0.75; // seconds
@@ -242,7 +242,7 @@ public class FRC2014 extends SimpleRobot {
         SmartDashboard.putNumber("Lifter Slowdown Threshold", LIFTER_ENCODER_SLOW_VALUE);
         SmartDashboard.putNumber("Lifter Slowdown Multiplier", 0.75);
         System.out.println("Attempting to initialize Camera.");
-        double time = RobotVision.initializeCamera();
+        double time = -1;//RobotVision.initializeCamera();
         if (time < 0) {
             isInitialized = false;
         } else {

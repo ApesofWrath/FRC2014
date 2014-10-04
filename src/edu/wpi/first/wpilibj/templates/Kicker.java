@@ -70,7 +70,7 @@ public class Kicker {
     }
 
     public static boolean kick() {
-        return kick(.9);
+        return kick(1.0);
     }
     public static boolean kick(double speed) {
         isLoaded = false;
@@ -107,7 +107,7 @@ public class Kicker {
         //throttle = (throttle/2.0)+0.5;
         //throttle = (throttle/-2.0)+0.5;  // down == 0, up == 1
         //double motorSpeed = 0.5;
-        double motorSpeed = 0.85;
+        double motorSpeed = 0.95;
 
         talonKickerLeft.set(-1.0 * motorSpeed);
         talonKickerRight.set(motorSpeed);
